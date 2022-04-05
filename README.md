@@ -49,14 +49,3 @@
 ## 🔥 스터디 진행현황과 분량
 + 4/9 OT
 <br>
-
-## 💡 기타 참고자료
-+ 자바봄 기술블로그, github
-  + https://javabom.tistory.com/70
-  + 스터디 방식과 코드리뷰에 대한 방식을 정할 때 참고로 한 스터디입니다.
-+ ChanBlog
-  + https://chanhuiseok.github.io/posts/git-3/
-  + github 업로드 방식 정리에 사용한 블로그 글입니다.
-+ Okky 코드리뷰 세미나
-  + https://www.youtube.com/watch?v=96JLcIq4LRw&ab_channel=%EB%B0%B1%EB%AA%85%EC%84%9D
-  + 코드리뷰에 대한 내용 작성시 참고한 유투브입니다.
