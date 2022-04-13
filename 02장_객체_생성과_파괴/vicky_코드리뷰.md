@@ -26,3 +26,4 @@ return b? Boolean.True:Boolean.False;
 <br>
 
 #### 코드리뷰 정리
+- 생성자를 팩터리 메서드 안에 넣어 생성자를 굳이 안 만들어도 된다
