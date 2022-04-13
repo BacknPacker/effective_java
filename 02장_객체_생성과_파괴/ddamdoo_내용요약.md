@@ -255,8 +255,6 @@ public static <E extends Enum<E>> EnumSet<E> noneOf(Class<E> elementType) {
 - `getType ` , `newType`: 인스턴스를 생성할 때, 해당 클래스가 아닌 다른 클래스에서 생성할 때 사용
 - `Type `: `getType`, `newType `의 간략한 버전
 
-- 
-
 ------
 
 
@@ -580,3 +578,109 @@ Item2 라는 클래스는 분변이고, 필수 및 선택적 매개변수들을 
 객체를 만들려면 빌더를 만들어야 하고, 이렇게 코드의 양이 증가하게 되면 성능이 민감한 상황에서 코스트가 커지는 상황이 발생할 수 있다.
 
 또한 매개변수가 적을 경우에는 점층적 생성자 패턴이 더 효율적일 수 있다. 하지만 시스템을 장기적으로 운영/유지보수 하게되면 매개변수가 추가되는 경우가 많고, 이러한 경우에 점층적 생성자 패턴을 이용하여 빌드 패턴으로 전환하는 공수가 또 들기 때문에 애초에 빌더 패턴을 이용하는 편이 낫다.
+
+------
+
+
+
+
+
+## Item 3. private 생성자나 열거 타입으로 싱글톤임을 보증하라.
+
+#### 싱글톤
+
+- 인스턴스를 **오직 하나만** 생성할 수 있는 클래스
+- 무상태 객체(stateless Object)
+- 시스템 컴포넌트
+- DB Connection Pool 등
+
+클래스를 싱글턴으로 만들면 이를 사용하는 클라이언트를 테스트하기 어려워질 수 있다. 타입을 인터페이스로 정의한 다음 그 인터페이스를 구현해 만든 싱글턴이 아니라면 싱글턴 인스턴스를 가짜 구현(mock)으로 대체할 수 없기 때문이다.
+
+
+
+### 싱글톤 생성 방식
+
+#### 1. public static final을 이용한 방식
+
+```java
+public class Book {
+		public static final Book INSTANCE = new Book();
+		private Book(){}
+		
+		public void borrowBook(){}
+}
+```
+
+public, protected 생성자가 없기 때문에 Book.INSTANCE를 초기화 할 때만 호출되어 인스턴스가 전체 시스템에서 하나 뿐임이 보장된다.
+
+예외적으로 권한이 있는 클라이언트는 리플렉션 API인 `AccessibleObject.setAccessible`을 사용해 private 생성자를 호출할 수 있다. 이러한 공격을 방지하고자 한다면, 생성자에서 두 번 객체를 생성하려고 할 때 예외를 던지게 하면 된다.
+
+**※ 리플렉션 API**
+
+- 리플렉션은 런타임에 클래스의 런타임 동작을 검사하거나 수정하는 프로세스이다.
+
+- 리플렉션 API는 IDE나 디버거, 테스트 툴 등에서 사용된다.
+
+  > https://docs.oracle.com/javase/tutorial/reflect/
+  >
+  > https://www.javatpoint.com/java-reflection
+
+또한 코드를 간결하게 볼 수 있다.
+
+
+
+#### 2. 정적 팩토리 방식
+
+```java
+public class Book {
+	private static final Book INSTANCE = new Book();
+	private Book(){}
+		
+	public static Book getInstance(){
+        return INSTANCE; 
+    }
+    
+    public void borrowBook(){}
+}
+```
+
+첫 번째 만든 방식과 같이 여기서도 getInstance에서 항상 같은 객체의 참조를 반환하기 때문에 리플렉션을 제외하고는 또 다른 Book이라는 인스턴스를 만들 수 없다.
+
+정적 팩토리 방식의 장점은 API를 변경하지 않고도 getInstance를 변경하여 싱글톤이 아니게 변경이 가능하다.
+
+또한 정적 팩토리를 `제네릭 싱글톤 팩토리`로 만들 수 있고, 정적 팩토리의 메소드 참조를 `공급자(Supplier<>)`로 사용할 수 있다.
+
+
+
+싱글톤 클래스를 1번과 2번 방식으로 `직렬화`하기 위해서는 모든 인스턴스 필드를 `일시적(transient)`라고 선언하고 `readResolve`메소드를 제공해야 `역직렬화`시에 새로운 인스턴스가 만들어지는 것을 방지할 수 있다. 만약 이렇게 하지 않으면 초기화해둔 인스턴스가 아닌 다른 인스턴스가 반환된다.
+
+**※ 직렬화(serializable)**
+
+- 자바 시스템 내부에서 사용되는 **객체 또는 데이터를 외부의 자바 시스템에서도 사용할 수 있도록 바이트(byte) 형태로 데이터 변환하는 기술**(`직렬화`)과 **바이트로 변환된 데이터를 다시 객체로 변환하는 기술**(`역직렬화`)을 아우르는 말
+
+  > https://techblog.woowahan.com/2550/
+  >
+  > https://techblog.woowahan.com/2551/
+
+```java
+private Object readResolve(){ 
+		return INSTANCE; 
+}
+```
+
+
+
+#### 3. 열거 타입 방식
+
+간결하고 추가적인 노력 없이 직렬화가 가능하다. 또한 아주 복잡한 직렬화 상황이나 리플렉션 공격에 대해서도 다른 인스턴스가 생성되는 것을 막아준다.
+
+대부분의 상황에서는 원소가 하나뿐인 열거타입이 싱글턴을 만드는 가장 좋은 방법이다. 단, 만들려는 싱글턴이 **Enum 외의 클래스를 상속해야 한다면 이 방법은 사용할 수 없다.**
+
+```java
+public enum Book{
+    INSTANCE;
+    
+    public void borrowBook(){}
+}
+```
+
