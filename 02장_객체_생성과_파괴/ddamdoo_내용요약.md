@@ -255,3 +255,328 @@ public static <E extends Enum<E>> EnumSet<E> noneOf(Class<E> elementType) {
 - `getType ` , `newType`: 인스턴스를 생성할 때, 해당 클래스가 아닌 다른 클래스에서 생성할 때 사용
 - `Type `: `getType`, `newType `의 간략한 버전
 
+- 
+
+------
+
+
+
+### 정적 팩토리 메소드의 단점
+
+
+
+#### 1. 상속하기 위해서 public이나 protected 생성자가 필요하기 때문에 정적 팩토리 메소드만 제공하면  하위 클래스를 만들 수 없다.
+
+책에서 언급한 java.util.Collections 로 만든 구현체는 상속할 수 없다.
+
+
+
+#### 2. 프로그래머가 찾기 어렵다.
+
+생성자처럼 JavaDoc에서 따로 모아주는 기능이 존재하지 않기 때문에 API 문서를 잘 정리하지 않으면 개발자가 의미를 정확히 알기 어렵다.
+
+따라서 널리 알려진 규약에 따라 짓는 방식으로 이러한 문제점을 보완해야 한다.
+
+아래는 책에서 알려준 흔한 명명방식이다.
+
+- `from `: 매개변수 하나로 하나의 인스턴스 만듬
+- `of `: 여러 매개변수로 인스턴스 만듬
+- `valueOf `: from 과 of의 자세한 버전
+- `getInstance`, `instance `: 인스턴스를 반환(매개변수가 없는 경우 같은 인스턴스임을 보장하지 않음)
+- `create`, `newInstance` : 매번 새로운 인스턴스를 생성하여 반환(같은 인스턴스임을 보장)
+- `getType ` , `newType`: 인스턴스를 생성할 때, 해당 클래스가 아닌 다른 클래스에서 생성할 때 사용
+- `Type `: `getType`, `newType `의 간략한 버전
+
+------
+
+
+
+
+
+## Item2. 생성자에 매개변수가 많다면 빌더를 고려하라
+
+매개변수가 많은 클래스가 있을 경우의 3가지 코드를 예시로 들어보겠다.
+
+
+
+#### 점층적 생성자 패턴
+
+`점층적 생성자 패턴`은 가장 단순한 패턴으로 필수로 들어가야하는 파라미터를 포함한 생성자와 선택적으로 필요한 파라미터를 포함하는 생성자를 각각 만들어주는 것이다.
+
+```java
+public class item2 {
+
+    private int required1;
+    private int required2;
+    private int required3;
+    private int optional1;
+    private int optional2;
+
+    public item2(int required1, int required2, int required3) {
+        this.required1 = required1;
+        this.required2 = required2;
+        this.required3 = required3;
+    }
+
+    public item2(int required1, int required2, int optional1, int required3) {
+        this.required1 = required1;
+        this.required2 = required2;
+        this.optional1 = optional1;
+        this.required3 = required3;
+    }
+
+    public item2(int required1, int required2, int optional1, int optional2, int required3) {
+        this.required1 = required1;
+        this.required2 = required2;
+        this.optional1 = optional1;
+        this.optional2 = optional2;
+        this.required3 = required3;
+    }
+}
+```
+
+점층적 생성자 패턴은 쓰기 가장 간단하지만 **매개변수가 많아지면 코드 작성 및 가독성이 안좋아진다.**
+
+- 각각의 매개변수가 무엇을 뜻하는지, 매개변수를 몇 개 사용했고, 몇 번째 입력중인지 주의깊게 살펴보아야 한다.
+
+
+
+#### 자바빈즈 패턴
+
+매개변수가 없는 생성자로 객체를 만들고, `setter`를 이용해서 원하는 매개변수의 값을 설정하는 방식이다.
+
+```java
+public class item2 {
+
+    private int required1;
+    private int required2;
+    private int required3;
+    private int optional1;
+    private int optional2;
+
+    public item2() {}
+
+    public void setRequired1(int val){
+        required1 = val;
+    }
+
+    public void setRequired2(int val){
+        required2 = val;
+    }
+
+    public void setRequired3(int val){
+        required3 = val;
+    }
+
+    public void setOptional1(int val){
+        optional1 = val;
+    }
+
+    public void setOptional2(int val){
+        optional2 = val;
+    }
+}
+
+```
+
+코드를 확인해보면 점층적 생성자 패턴의 단점이 사라지고, 가독성 좋은 코드가 생성되었다.
+
+
+
+##### 자바빈즈 패턴의 단점
+
+객체 하나를 만들기 위해서 여러 개의 메소드를 호출해야 하고, 객체가 완전히 생성되기 전에는 일관성이 무너진다.
+
+- 생성자를 통한 유효성 검사가 불가능 함.
+
+클래스를 불변으로 만들 수 없다.
+
+※ **불변(immutable)** : 어떠한 변경도 허용하지 않는다는 뜻, 주로 변경을 허용하는 가변 객체와 구분하는 용도
+
+
+
+#### 빌더 패턴
+
+필요한 객체를 직접 만드는 대신 **필수 매개변수만으로 생성자를 호출**해 빌더 객체를 얻고, **setter를 이용하여 선택 매개변수를 설정**한다. 그 이후 매개변수가 없는 build 메소드를 호출해 필요한 객체를 얻는다.(보통은 일관성을 위한 불변 객체)
+
+```java
+public class Item2 {
+
+    private final int required1;
+    private final int required2;
+    private final int required3;
+    private final int optional1;
+    private final int optional2;
+
+    public static class Builder {
+        //필수 매개변수
+        private final int required1;
+        private final int required2;
+        private final int required3;
+
+        //옵션 매개변수
+        private int optional1 = 0;
+        private int optional2 = 0;
+
+        public Builder(int required1, int required2, int required3) {
+            this.required1 = required1;
+            this.required2 = required2;
+            this.required3 = required3;
+        }
+
+        public Builder optional1(int val) {
+            optional1 = val;
+            return this;
+        }
+
+        public Builder optional2(int val) {
+            optional2 = val;
+            return this;
+        }
+        public Item2 build(){
+            return new Item2(this);    
+        }
+    }
+
+        private Item2(Builder builder) {
+            required1 = builder.required1;
+            required2 = builder.required2;
+            required3 = builder.required3;
+            optional1 = builder.optional1;
+            optional2 = builder.optional2;
+        }
+}
+```
+
+Item2 라는 클래스는 분변이고, 필수 및 선택적 매개변수들을 한 곳에 모아두었기 때문에 setter를 통해서 필요한 매개변수를 호출할 수 있다. 이러한 방식을 `fluent API` 또는 `method chaining`이라고 한다.
+
+- 사용 예시
+
+  - ```java
+    Item2 item = new Builder(1, 2, 3)
+        .optional1(1)
+        .optional2(2)
+        .build();
+    ```
+
+빌더 패턴은 **쉽고**, **가독성이 좋다.** 이는 `명명된 선택적 매개변수(named optional parameters)`를 모사한 것이다.
+
+
+
+빌더 패턴은 계층적으로 설계된 클래스와 쓰기 좋은데 추상클래스는 추상 빌더를, 구현 클래스는 구현 빌더를 가지도록 하여 이를 상속하는 클래스들에서 다양한 계층구조의 빌더 패턴을 확인할 수 있다.
+
+
+
+책의 예시 코드를 보면 Pizza, NyPizza, Calzone 코드로 예시를 설명하고 있다.
+
+- pizza.java
+
+  - ```java
+    import java.util.EnumSet;
+    import java.util.Objects;
+    import java.util.Set;
+    
+    public abstract class Pizza {
+        public enum Topping {HAM, MUSHROOM, ONION, PEPPER, SAUSAGE}
+    
+        final Set<Topping> toppings;
+    
+        abstract static class Builder<T extends Builder<T>> {
+            EnumSet<Topping> toppings = EnumSet.noneOf(Topping.class);
+    
+            public T addTopping(Topping topping) {
+                toppings.add(Objects.requireNonNull(topping));
+                return self();
+            }
+    
+            abstract Pizza build();
+    
+            protected abstract T self();
+        }
+    
+        Pizza(Builder<?> builder) {
+            toppings = builder.toppings.clone();
+        }
+    }
+    ```
+
+    여기서 추상 메소드인 **self()**를 사용하여 하위 클래스에서 따로 형변환 없이 메소드 연쇄를 지원한다.
+
+    - 이러한 방식을 `시뮬레이트한 셀프타입(simulated self-type)` 이라고 한다.
+
+- NyPizza.java
+
+  - ```java
+    public class NyPizza extends Pizza {
+        public enum Size {SMALL, MEDIUM, LARGE}
+    
+        private final Size size;
+    
+        public static class Builder extends Pizza.Builder<Builder> {
+            private final Size size;
+    
+            public Builder(Size size) {
+                this.size = size;
+            }
+    
+            @Override
+            NyPizza build() {
+                return new NyPizza(this);
+            }
+    
+            @Override
+            protected Builder self() {
+                return this;
+            }
+        }
+    
+        private NyPizza(Builder builder) {
+            super(builder);
+            size = builder.size;
+        }
+    }
+    ```
+
+- Calzone.java
+
+  - ```java
+    public class Calzone extends Pizza {
+        private final boolean sauceInside;
+    
+        public static class Builder extends Pizza.Builder<Builder> {
+            private boolean sauceInside = false;
+    
+            public Builder sauceInside() {
+                this.sauceInside = true;
+                return this;
+            }
+    
+            @Override
+            Calzone build() {
+                return new Calzone(this);
+            }
+    
+            @Override
+            protected Builder self() {
+                return this;
+            }
+        }
+    
+        private Calzone(Builder builder) {
+            super(builder);
+            this.sauceInside = builder.sauceInside;
+        }
+    }
+    ```
+
+각각 하위 클래스인 `NyPizza.java`와 `Calzone.java`의 빌더가 정의한 build 메소드는 해당하는 구현 하위 클래스인 NyPizza와 Calzone을 반환한다.
+
+이 케이스처럼 **하위 클래스의 메서드가 상위의 메서드가 정의한 반환 타입이 아니라 그 하위 타입을 반환하는 기능**을 `공변 반환 타이핑(covariant return typing)` 이라 한다. 이 기능을 사용하면 클라이언트가 형변환에 신경쓰지 않아도 된다.
+
+
+
+##### 빌더 패턴의 단점
+
+객체를 만들려면 빌더를 만들어야 하고, 이렇게 코드의 양이 증가하게 되면 성능이 민감한 상황에서 코스트가 커지는 상황이 발생할 수 있다.
+
+또한 매개변수가 적을 경우에는 점층적 생성자 패턴이 더 효율적일 수 있다. 하지만 시스템을 장기적으로 운영/유지보수 하게되면 매개변수가 추가되는 경우가 많고, 이러한 경우에 점층적 생성자 패턴을 이용하여 빌드 패턴으로 전환하는 공수가 또 들기 때문에 애초에 빌더 패턴을 이용하는 편이 낫다.
