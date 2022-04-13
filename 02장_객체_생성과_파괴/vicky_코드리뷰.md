@@ -6,6 +6,12 @@
 #### 이전 코드
 ```java
 
+
+public Account(string name,int price){
+this.name=name;
+this.price=price;
+
+}
 ```
 <br>
 
