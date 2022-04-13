@@ -18,6 +18,10 @@ this.price=price;
 #### 변경 후 코드
 ```java
 
+public static Boolean ValueOf(boolean b){
+return b? Boolean.True:Boolean.False;
+
+}
 ```
 <br>
 
