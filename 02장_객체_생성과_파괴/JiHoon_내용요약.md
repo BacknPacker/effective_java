@@ -324,11 +324,14 @@ public void 싱글턴테스트() {
 
 ### ✅ 싱글턴을 만드는 방법 2. 정적 팩터리 메소드를 public static 멤버로 제공
 ```java
-public class SingletonTest {
+public class SingletonTest2 {
+    private static final SingletonTest2 INSTANCE = new SingletonTest2();
 
-    public static final SingletonTest INSTANCE = new SingletonTest();
+    private SingletonTest2() {}
 
-    private SingletonTest() {}
+    public static SingletonTest2 getInstance() {
+        return INSTANCE;
+    }
 }
 ```
 ```java
