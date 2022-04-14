@@ -425,3 +425,6 @@ public class SpellChecker {
   public List<String> suggestions(String typo) {...}
 }
 ```
+
+## ✨ 아이템6. 불필요한 객체 생성을 피하라
+***
