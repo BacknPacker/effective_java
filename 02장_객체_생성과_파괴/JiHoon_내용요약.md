@@ -658,15 +658,15 @@ void 스택_테스트() {
 
 #### 표로 그려보자면 아래와 같습니다. 편의상 size는 그대로 두겠습니다.
 
-|Index|0|1|2|3(top)|4(pop)</span>
+|Index|0|1|2|3|4(pop)</span>
 |---|---|---|---|---|---|
 |Value|1|2|3|4|5|
 
-|Index|0|1|2(top)|3(pop)|4(garbage)|
+|Index|0|1|2|3(pop)|4(garbage)|
 |---|---|---|---|---|---|
 |Value|1|2|3|4|5(garbage)|
 
-|Index|0|1(top)|2(pop)|3(garbage)|4(garbage)|
+|Index|0|1|2(pop)|3(garbage)|4(garbage)|
 |---|---|---|---|---|---|
 |Value|1|2|3|4(garbage)|5(garbage)|
 
@@ -692,15 +692,15 @@ public Object pop() {
 
 #### 표로 그려보자면 아래와 같습니다. 편의상 size는 그대로 두겠습니다.
 
-|Index|0|1|2|3(top)|4(pop)</span>
+|Index|0|1|2|3|4(pop)</span>
 |---|---|---|---|---|---|
 |Value|1|2|3|4|5|
 
-|Index|0|1|2(top)|3|4|
+|Index|0|1|2|3(pop)|4|
 |---|---|---|---|---|---|
 |Value|1|2|3|4|null|
 
-|Index|0|1(top)|2(pop)|null|null|
+|Index|0|1|2(pop)|null|null|
 |---|---|---|---|---|---|
 |Value|1|2|3|null|null|
 
