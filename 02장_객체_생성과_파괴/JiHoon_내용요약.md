@@ -404,7 +404,6 @@ public class SpellChecker{
   private static final Lexicon dictionary = ...; // 사전에 의존한다.
   
   private SpellChecker(...) {} 
-  private static final Lexicon dictionary = ...; // 사전에 의존한다.
   public static SpellChecker INSTANCE = new SpellChecker(...);
 
   public static boolean isValid(String word){...}
