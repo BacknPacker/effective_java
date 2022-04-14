@@ -2,7 +2,7 @@
 |---|---|---|---|---|---|
 |Value|1|2|3|4(top)|5(Garbage)|
 
-|Index|0|1|2|<span style="color:red; background-color:yellow">3|4|
+|Index|0|1|2|<span style="color:yellow">노랑</span>|4|
 |---|---|---|---|---|---|
 |Value|1|2|3|4(top)|5|
 # 2장 객체 생성과 파괴
