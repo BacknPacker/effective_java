@@ -61,7 +61,7 @@ public static Boolean valueOf(boolean b){
 
 그래서 우리는 점층적 생성자 패턴, 자바빈즈 패턴, 빌더 패턴을 알아보며 왜 빌더를 고려해야 하는지 알아보자.
 
-1. 점층적 생성자 패턴 (Telescoping constructor pattern)  
+#### 1. 점층적 생성자 패턴 (Telescoping constructor pattern)  
 : 필수 매개변수만 받는 생성자, 필수 매개변수와 선택 매개변수 1개를 받는 생성자, 선택 매개변수를 2개까지 받는 생성자, ... 형태로 선택 매개변수를 전부 다 받는 생성자까지 늘려가는 방식.
    ``` java
    public class NutritionFacts {
@@ -110,7 +110,7 @@ public static Boolean valueOf(boolean b){
    ➡️ 만약 매개변수 개수가 많아진다면, 클라이언트 코드를 작성하거나 읽기 어렵게 된다.
 
 
-2. 자바빈즈 패턴 (JavaBeans pattern)  
+#### 2. 자바빈즈 패턴 (JavaBeans pattern)  
    : 매개변수가 없는 생성자로 객체를 만든 후, Setter 메서드들을 호출해 원하는 매개변수의 값을 설정하는 방식.
    ``` java
    public class NutritionFacts {
@@ -145,7 +145,7 @@ public static Boolean valueOf(boolean b){
    ➡️ 객체 하나를 만들려면 메서드 여러 개 호출해야 하고, 객체가 완전히 생성되기 전까지는 일관성(consistency)이 무너진 상태에 놓이게 된다.
 
 
-3. 빌더 패턴 (Builder pattern)  
+#### 3. 빌더 패턴 (Builder pattern)  
 : 필요한 객체를 직접 만드는 대신, 필수 매개변수만으로 생성자 또는 정적 팩터리 메서드를 호출해 빌더 객체를 얻는다. 그다음 빌더 객체가 제공하는 일종의 Setter 메서드들로 원하는 선택 매개변수들을 설정한다. 마지막으로 매개변수가 없는 build 메서드를 호출해 필요한 객체를 얻는다.  
 빌더는 생성할 클래스 안에 정적 멤버 클래스로 만들어 두는게 보통이다.
    ``` java
@@ -303,7 +303,8 @@ public class Calzone extends Pizza {
 ```
 ➡️ 소스를 안에 넣을지 선택하는 매개변수를 필수로 받는다.  
 ➡️ Calzone.Builder는 Calzone을 반환한다.  
-➡️ 하위 클래스의 메서드가 상위 클래스의 메서드가 정의한 반환 타입이 아닌, 그 하위 타입을 반환하는 기능을 공변 반환 타이핑이라 한다.
+➡️ 하위 클래스의 메서드가 상위 클래스의 메서드가 정의한 반환 타입이 아닌, 그 하위 타입을 반환하는 기능을 공변 반환 타이핑이라 한다.  
+💡 Spring에서 Builder pattern은 @Builder 하나로 끝나지만 위의 원리를 잘 알아두자. 
 
 ## ✨ 아이템3. private 생성자나 열거 타입으로 싱글톤임을 보증하라.
 ***
@@ -392,3 +393,35 @@ public enum Elvis {
 
 ## ✨ 아이템4. 인스턴스화를 막으려거든 private 생성자를 사용하라.
 ***
+정적 멤버만 담은 유틸리티 클래스는 인스턴스로 만들어 쓰려고 설계한 것이 아니다. 하지만 생성자를 명시하지 않으면 컴파일러가 자동으로 기본 생성자를 만들어준다. 따라서 사용자는 이 생성자가 자동 생성된 것인지 구분할 수 없다. 그래서 이러한 클래스 멤버에 대해 인스턴스화를 막으려면 아래와 같이 private 생성자를 추가해야한다.
+```java
+// 코드 4-1 인스턴스를 만들 수 없는 유틸리티 클래스 
+public class UtilityClass {
+    // 기본 생성자가 만들어지는 것을 막는다(인스턴스화 방지용).
+    private UtilityClass() {
+        throw new AssertionError();
+    }
+
+    // 나머지 코드는 생략
+}
+```
+➡️ 이 코드는 어떤 환경에서도 클래스가 인스턴스화 되는 것을 막아주지만 생성자가 분명 존재하는데 호출할 수는 없어 직관적이지 않으니 주석을 달아 놓는것이 좋다.  
+➡️ 이 방식은 상속을 불가능하게 하는 효과도 있다.
+
+## ✨ 아이템5. 자원을 직접 명시하지 말고 의존 객체 주입을 사용하라
+***
+클래스가 내부적으로 하나 이상의 자원에 의존하고, 그 자원일 클래스 동작에 영향을 준다면 싱글톤과 정적 유틸리티 클래스는 사용하지 않는 것이 좋다. 해당 자원들을 클래스가 직접 만들게 해서도 안 된다.  
+대신 필요한 자원을 생성자에 넘겨주자. 의존 객체 주입이라 하며 클래스의 유연성, 재사용성, 테스트 용이성을 개선해준다.
+```java
+public class SpellChecker {
+  private final Lexicon dictionary;
+  
+  // 필요한 자원을 생성자에 넘겨주자.
+  public SpellChecker(Lexicon dictionary) {
+    this.dictionary = Objects.requireNonNull(dictionary);
+  }
+  
+  public boolean isValid(String word) {...}
+  public List<String> suggestions(String typo) {...}
+}
+```
