@@ -469,7 +469,7 @@ public void 객체_재사용_테스트_성공() {
     String name1 = "ji-hoon";
     String name2 = "ji-hoon";
 
-    assertThat(name1).isSameAs(name2); // 새로운 인스턴스를 생성하므로 false
+    assertThat(name1).isSameAs(name2); // 인스턴트 재사용하므로 true
 }
 ```
 ![image](https://user-images.githubusercontent.com/53300830/163176166-b2e3a054-c2e3-4239-ba0a-a4a12a5b5cbc.png)
