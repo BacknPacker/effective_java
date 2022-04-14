@@ -1,4 +1,10 @@
+|Index|0|1|2|3|<span style="color:red">4(pop)</span>
+|---|---|---|---|---|---|
+|Value|1|2|3|4(top)|5(Garbage)|
 
+|Index|0|1|2|<span style="color:red; background-color:yellow">3|4|
+|---|---|---|---|---|---|
+|Value|1|2|3|4(top)|5|
 # 2장 객체 생성과 파괴
 
 ## 아이템 1. 생성자 대신 정적 
@@ -592,3 +598,22 @@ class AutoBoxingExampleTest {
 ![image](https://user-images.githubusercontent.com/53300830/163193733-5e0a4840-7755-41ac-9f81-dec9b760adcd.png)
 > 타입을 프리티머브 타입으로 바꾸면서 성능이 확실히 개선 된 모습을 볼 수 있다.
 
+## 아이템 7. 다 쓴 객체 참조를 해제하라.
+> JVM은 GC가 메모리를 관리해준다.  
+하지만 메모리 관레에 더 이상 신경 쓰지 않아도 된다는 것은 아니다  
+[참고 블로그](https://mangkyu.tistory.com/118)
+
+아래 사진 처럼 간단한 스택으로 된 코드가 있다고 해보겠습니다.
+
+|Index|0|1|2|3|<span style="color:red">4(pop)</span>
+|---|---|---|---|---|---|
+|Value|1|2|3|4(top)|5(Garbage)|
+
+|Index|0|1|2|<span style="color:red; background-color:yellow">3|4|
+|---|---|---|---|---|---|
+|Value|1|2|3|4(top)|5|
+
+```java
+```
+
+account.setName("SuJeoung");
