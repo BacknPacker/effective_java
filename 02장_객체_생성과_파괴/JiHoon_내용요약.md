@@ -784,10 +784,10 @@ public static void main(String[] args) {
     <summary>리스너(listener), 콜백(callback)</summary>
     <div markdown="1">
 
-    [참고 블로그](https://www.crocus.co.kr/1533)
+        [참고 블로그](https://www.crocus.co.kr/1533)
 
-    콜백(Callback) : 이벤트가 발생하면 특정 메소드를 호출해 알려준다. (1개)
-    리스너(Listener) : 이벤트가 발생하면 연결된 리스너(핸들러)들에게 이벤트를 전달한다 (n개)
+        - 콜백(Callback) : 이벤트가 발생하면 특정 메소드를 호출해 알려준다. (1개)  
+        - 리스너(Listener) : 이벤트가 발생하면 연결된 리스너(핸들러)들에게 이벤트를 전달한다 (n개)
 
     </div>
     </details>
