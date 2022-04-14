@@ -408,7 +408,7 @@ public class UtilityClass {
 ➡️ 이 코드는 어떤 환경에서도 클래스가 인스턴스화 되는 것을 막아주지만 생성자가 분명 존재하는데 호출할 수는 없어 직관적이지 않으니 주석을 달아 놓는것이 좋다.  
 ➡️ 이 방식은 상속을 불가능하게 하는 효과도 있다.
 
-## ✨ 아이템5. 자원을 직접 명시하지 말고 의존 객체 주입을 사용하라
+## ✨ 아이템5. 자원을 직접 명시하지 말고 의존 객체 주입을 사용하라.
 ***
 클래스가 내부적으로 하나 이상의 자원에 의존하고, 그 자원일 클래스 동작에 영향을 준다면 싱글톤과 정적 유틸리티 클래스는 사용하지 않는 것이 좋다. 해당 자원들을 클래스가 직접 만들게 해서도 안 된다.  
 대신 필요한 자원을 생성자에 넘겨주자. 의존 객체 주입이라 하며 클래스의 유연성, 재사용성, 테스트 용이성을 개선해준다.
@@ -426,5 +426,221 @@ public class SpellChecker {
 }
 ```
 
-## ✨ 아이템6. 불필요한 객체 생성을 피하라
+## ✨ 아이템6. 불필요한 객체 생성을 피하라.
 ***
+똑같은 기능의 객체를 매번 생성하기보다는 객체 하나를 재사용하는 편이 낫다. 생성자 대신 정적 팩터리 메서드를 제공하는 불변 클래스에서는 정적 팩터리 메서드를 사용해 불필요한 객체 생성을 피할 수 있다.  
+또한 불필요한 객체를 만들어내는 또 다른 예로 오토박싱을 들 수 있다. 오토박싱은 프로그래머가 기본 타입과 박싱된 기본 타입을 섞어 쓸 때 자동으로 상호 변환해주는 기술이다.  
+예를들어, sum을 할 때 long이 아닌 Long 으로 선언한다면 불필요한 Long 인스턴스가 약 231개나 만들어져 훨씬 느려진다. 그러므로 박싱된 기본 타입보다는 기본 타입을 사용하고, 의도치 않은 오토박싱이 숨어들지 않도록 주의하자.  
+
+## ✨ 아이템7. 다 쓴 객체 참조를 해제하라.
+***
+자바는 메모리 관리에 신경을 쓰지 않아도 된다고 생각하는건 큰 오해이다. 메모리 누수는 겉으로 잘 드러나지 않아 시스템에 수년간 잠복하는 사례도 있다. 이런 누수는 철저한 코드 리뷰나 힙 프로파일러 같은 디버깅 도구를 동원해야만 발견되기도 한다. 그래서 이런 종류의 문제는 예방법을 익혀두는 것이 매우 중요하다.  
++ 객체를 다 쓰면 null 처리를 한다. (Best 방법은 아니다)
++ 다 쓴 객체 참조를 해제하는 가장 좋은 방법은 그 참조를 담은 변수를 유효범위 밖으로 밀어내는 것이다.
++ 배열이 비활성 영역이 되는 순간 null 처리해서 해당 객체를 더는 쓰지 않을 것임을 가비지 컬렉터에게 알려야한다.
++ 앤트리가 살아 있는 캐시가 필요한 상황이라면 WeakHashMap을 사용하자. 그러면 다 쓴 엔트리는 그 즉시 자동으로 제거될 것이다.
+
+
+## ✨ 아이템8. finalizer와 cleaner 사용을 피하라.
+***
+finalizer 와 cleaner는 자바의 객체 소멸자를 제공한다. 하지만 이 둘다 예측할 수 없으며, 상황에 따라 위험하고, 느리고, 일반적으로 불필요함으로 사용을 피하자.
+
+#### ✔️ finalizer와  cleaner 단점
++ 즉시 수행된다는 보장이 없어 제때 실행되어야 하는 작업은 절대 할 수 없다.
++ 접근할 수 없는 일부 객체에 딸린 종료 작업을 전혀 수행하지 못한 채 프로그램이 중단될 수도 있어서 프로그램 생애주기와 상관없는, 상태를 영구적으로 수정하는 작업에서는 절대 의존해서는 안 된다.
+
+#### 💡 finalizer와  cleaner 의 대안
+- AutoCloseable 구현하고 다 사용하면 close 메서드 호출하기
+   ```java
+   // 코드 8-1 cleaner를 안전망으로 활용하는 AutoCloseable 클래스 (44쪽)
+   public class Room implements AutoCloseable {
+       private static final Cleaner cleaner = Cleaner.create();
+   
+       // 청소가 필요한 자원. 절대 Room을 참조해서는 안 된다!
+       private static class State implements Runnable {
+           int numJunkPiles; // Number of junk piles in this room
+   
+           State(int numJunkPiles) {
+               this.numJunkPiles = numJunkPiles;
+           }
+   
+           // close 메서드나 cleaner가 호출한다.
+           @Override public void run() {
+               System.out.println("Cleaning room");
+               numJunkPiles = 0;
+           }
+       }
+   
+       // 방의 상태. cleanable과 공유한다.
+       private final State state;
+   
+       // cleanable 객체. 수거 대상이 되면 방을 청소한다.
+       private final Cleaner.Cleanable cleanable;
+   
+       public Room(int numJunkPiles) {
+           state = new State(numJunkPiles);
+           cleanable = cleaner.register(this, state);
+       }
+   
+       @Override public void close() {
+           cleanable.clean();
+       }
+   }
+   ```
+   ➡️ State는 Runnable을 구현하고, 그 안의 run 메서드는 cleanable에 의해 딱 한 번만 호출된다.  
+   ➡️ State 인스턴스는 절대로 Room 인스턴스를 참조해서는 안 된다. 순환참조가 생겨 가비지 컬렉터가 Room 인스턴스를 회수해갈 기회가 오지 않기 때문이다.  
+   ➡️ 이 Room의 cleaner는 단지 안전망으로만 쓰였다.  cleaner는 이렇게 안전망 역할이나 중요하지 않은 네이티브 자원 회수용으로만 사용하자.
+
+
+## ✨ 아이템9. try-finally 보다는 try-with-resources를 사용하라
+***
+자바 라이브러리에는 close 메서드를 호출해 직접 닫아줘야 하는 자원이 많다. InputStream, OutputStream, java.sql.Connection 등이 좋은 예다. 하지만 이것은 성능 문제로 이어지기도 한다.  
+전통적으로 자원이 제대로 닫힘을 보장하는 수단인 try-finally와 꼭 회수해야 하는 자원을 다룰 때는 try-finally 말고, try-with-resources를 사용하자. 코드는 더 짧고 분명해지고, 만들어지는 예외 정보도 훨씬 유용하다.  
+try-finally 로 작성하면 실용적이지 못할 만큼 코드가 지저분해지는 경우라도, try-with-resources로는 정확하고 쉽게 자원을 회수할 수 있다.
+
+#### ✔️ try-finally
+```java
+public class TopLine {
+    // 코드 9-1 try-finally - 더 이상 자원을 회수하는 최선의 방책이 아니다! (47쪽)
+    static String firstLineOfFile(String path) throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(path));
+        try {
+            return br.readLine();
+        } finally {
+            br.close();
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+        String path = args[0];
+        System.out.println(firstLineOfFile(path));
+    }
+}
+```
+
+#### ✔️ 자원을 하나 더 사용한 try-finally
+```java
+public class Copy {
+    private static final int BUFFER_SIZE = 8 * 1024;
+
+    // 코드 9-2 자원이 둘 이상이면 try-finally 방식은 너무 지저분하다! (47쪽)
+    static void copy(String src, String dst) throws IOException {
+        InputStream in = new FileInputStream(src);
+        try {
+            OutputStream out = new FileOutputStream(dst);
+            try {
+                byte[] buf = new byte[BUFFER_SIZE];
+                int n;
+                while ((n = in.read(buf)) >= 0)
+                    out.write(buf, 0, n);
+            } finally {
+                out.close();
+            }
+        } finally {
+            in.close();
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+        String src = args[0];
+        String dst = args[1];
+        copy(src, dst);
+    }
+}
+```
+➡️ 두번째 예외가 첫 번째 예외를 완전히 집어삼켜, 실제 시스템에서의 디버깅을 몹시 어렵게 할 것이다.
+➡️ 이러한 문제를 try-with-resources 로 해결할 수 있다.
+
+#### ✔️ try-with-resources
+```java
+public class TopLine {
+    // try-with-resources - 자원을 회수하는 최선책! 
+    static String firstLineOfFile(String path) throws IOException {
+        try (BufferedReader br = new BufferedReader(
+                new FileReader(path))) {
+            return br.readLine();
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+        String path = args[0];
+        System.out.println(firstLineOfFile(path));
+    }
+}
+```
+
+#### ✔️ 복수의 자원을 처리하는 try-with-resources
+```java
+public class Copy {
+    private static final int BUFFER_SIZE = 8 * 1024;
+
+    // 복수의 자원을 처리하는 try-with-resources - 짧고 매혹적이다! 
+    static void copy(String src, String dst) throws IOException {
+        try (InputStream   in = new FileInputStream(src);
+             OutputStream out = new FileOutputStream(dst)) {
+            byte[] buf = new byte[BUFFER_SIZE];
+            int n;
+            while ((n = in.read(buf)) >= 0)
+                out.write(buf, 0, n);
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+        String src = args[0];
+        String dst = args[1];
+        copy(src, dst);
+    }
+}
+```
+➡️ try-with-resources 버전이 짧고 읽기 수월할 뿐 아니라 문제를 진단하기도 훨씬 좋다.
+
+#### ✔️ catch 절과 함께 쓰는 try-with-resources
+```java
+public class TopLineWithDefault {
+    // 코드 9-5 try-with-resources를 catch 절과 함께 쓰는 모습 (49쪽)
+    static String firstLineOfFile(String path, String defaultVal) {
+        try (BufferedReader br = new BufferedReader(
+                new FileReader(path))) {
+            return br.readLine();
+        } catch (IOException e) {
+            return defaultVal;
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+        String path = args[0];
+        System.out.println(firstLineOfFile(path, "Toppy McTopFace"));
+    }
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
