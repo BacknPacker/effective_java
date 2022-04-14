@@ -698,7 +698,7 @@ public Object pop() {
 
 |Index|0|1|2(top)|3|4|
 |---|---|---|---|---|---|
-|Value|1|2|3|4|5(null)|
+|Value|1|2|3|4|null|
 
 |Index|0|1(top)|2(pop)|null|null|
 |---|---|---|---|---|---|
