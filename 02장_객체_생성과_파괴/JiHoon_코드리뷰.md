@@ -18,21 +18,30 @@
 #### 코드리뷰 정리
 
 ## 아이템 2. 생성자에 매개변수가 많다면 빌더를 고려하라.
-<br>
+> 편의상 빌더 패턴과 매개변수들은 작성이 돼 있다는 전제하에 코드 작성했습니다.
 
-#### 이전 코드
+#### ⛔️ 이전 코드
 ```java
-
+public static void main(String[] args) {
+    // 이 코드는 1회 제공량이 150일까 아니면 제공 횟수가 150인걸까?
+    NutritionFacts nutritionFacts1 = new NutritionFacts(150, 2, 0);
+    // 이 코드는 나트륨 제공량이 몇 일까? 그리고 0인 값을 꼭 적어줘야 하는 것일까
+    NutritionFacts nutritionFacts2 = new NutritionFacts(150, 2, 100, 0, 12, 10);
+}
 ```
-<br>
 
-#### 변경 후 코드
+#### ✅ 변경 후 코드
 ```java
-
+public static void main(String[] args) {
+    NutritionFacts burger = new NutritionFacts.Builder(500, 1)
+            .calories(200)
+            .sodium(35)
+            .carbohydrate(15)
+            .build();
+}
 ```
-<br>
-
-#### 코드리뷰 정리
+#### 📋 코드리뷰 정리
+- 이전 코드에 비해 훨씬 보기 좋아졌으며, 어떤 값이 어느 변수에 해당하는지 확실하게 알 수 있다.
 
 ## 아이템 3. private 생성자나 열거 타입으로 싱글턴임을 보증하라
 <br>
