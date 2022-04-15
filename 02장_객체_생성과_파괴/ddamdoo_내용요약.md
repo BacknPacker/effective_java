@@ -874,3 +874,109 @@ public class AutoBoxing {
 ##### ![1650031299764](ddamdoo_내용요약.assets/1650031299764.png)
 
 결과는 대략 9배 정도의 성능차이가 났다. 따라서 오토박싱에서도 비용이 발생하므로 이러한 부분을 주의해서 코드를 작성해야 한다.
+
+
+
+---
+
+
+
+## Item 7. 다 쓴 객체 참조를 해제하라.
+
+자바는 C/C++과는 다르게 가비지 컬렉터 덕분에 메모리 관리를 따로 안해주어도 된다는 장점이 있다. 하지만 이 또한 메모리를 절대적으로 관리해주는 것은 아니다. 책에 나온 예시 코드이다.
+
+```java
+import java.util.Arrays;
+
+public class Stack {
+    private Object[] elements;
+    private int size = 0;
+    private static final int DEFAULT_INITIAL_CAPACITY = 16;
+
+    public Stack() {
+        this.elements = new Object[DEFAULT_INITIAL_CAPACITY];
+    }
+
+    public Stack(int size) {
+        this.elements = new Object[size];
+    }
+
+    public void push(final Object e) {
+        ensureCapacity();
+        elements[size++] = e;
+    }
+
+    public Object pop() {
+        if (size == 0) {
+            return null;
+        }
+        return elements[--size];
+    }
+
+    public Object size() {
+        return this.elements.length;
+    }
+
+    private void ensureCapacity() {
+        if (elements.length == size) {
+            elements = Arrays.copyOf(elements, (size * 2) + 1);
+        }
+    }
+}
+```
+
+이 코드를 보면 push, pop을 해주면서 따로 누수가 없는 것으로 보이지만, 메모리 누수가 존재한다. 실제로 elements[--size]라는 부분에서 실제 값이 삭제되는 것이 아니라 배열 내부의 인덱스만 이동하기 때문이다. 이러한 메모리 누수를 관리해주지 않으면 심한 경우 `디스크 페이징`이나 `OutOfMemoryError`를 일으켜 프로그램이 예기치 않게 종료되기도 한다.
+
+이러한 문제는 pop() 함수에서 값을 반환하기 전에 null로 초기화 해주면 된다.
+
+```java
+...
+    
+public Object pop() {
+	if (size == 0) {
+		return new EmptyStackException();
+	}
+	Object result = elements[--size];
+	elements[size] = null;
+	return result;
+}
+...
+```
+
+이 방식을 사용하면 문제가 생긴다고 해도 `NullPointerException`이 발생해 더 큰 문제가 발생하는 것을 사전에 차단할 수 있다. 하지만 개발자가 모든 코드에 대해서 null처리를 해주는 것은 가독성을 낮추기 때문에 예외적인 경우에만 null처리를 하도록 해야 한다.
+
+다 쓴 참조를 해제하는 가장 좋은 방법은 참조를 담은 **변수를 유효 범위 밖으로 밀어내는 것**이다. 이는 아이템 57에서 나올 예정이다.
+
+
+
+##### Stack이 메모리 누수에 취약한 이유
+
+- 자기 자신의 메모리를 직접 관리하기 때문
+- 객체가 아닌 객체 참조를 담는 `elements 배열`로 저장소 풀을 만들어 원소들을 관리함
+- 배열의 활성 영역부분에 속한 원소들은 사용되고, 비활성 영역은 쓰이지 않음
+  - 비활성 영역을 가비지 컬렉터가 알 방법이 없다는 것
+
+stack 이외에도 **자신의 메모리를 직접 관리하는 클래스**는 프로그래머가 항상 메모리 누수에 주의해야 한다.
+
+또 다른 메모리 누수의 주범인 **캐시**와 **리스너(Listener)** 혹은 **콜백(Callback)**이 있다.
+
+
+
+##### 캐시의 메모리 누수 해결방법
+
+* 캐시 외부에서 키를 참조하는 동안만 엔트리가 살아 있는 캐시가 필요한 경우에는 WeakHashMap을 사용
+
+- 엔트리의 유효 기간을 정해서 사용
+  - 이 방법은 유효 기간을 계산하는 것이 어렵기 때문에 엔트리 가치를 떨어뜨리는 방식을 사용한다.
+  - 쓰지 않는 엔트리를 청소해준다.
+    - `ScheduledThreadPoolExecutor`와 같은 백그라운드 스레드를 활용하거나 캐시에 새 엔트리를 추가할 때 부수 작업으로 수행하는 방법을 이용하면 된다.
+    - `LinkedHashMap`은 `removeEldestEntry `메서드를 사용해 후자의 방식으로 처리한다.
+
+
+
+##### 리스너(Listener) 혹은 콜백(Callback)의 메모리 누수 해결방법
+
+클라이언트가 콜백을 등록만 하고 해지하지 않는다면 콜백은 쌓이게 될 것이다. 이럴 때 콜백을 약한 참조(weak reference)로 저장하면 GC가 즉시 수거해간다. 예시로 `WeakHashMap`에 키로 저장하는 방법이 있다.
+
+
+
