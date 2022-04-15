@@ -1,8 +1,7 @@
 
 # 2장 객체 생성과 파괴
 
-## 아이템 1. 생성자 대신 정적 
-> 메서드를 고려하라
+## 아이템 1. 생성자 대신 정적 메서드를 고려하라
 ```java
 public static Boolean valueOf(boolean bololean){
   return b Boolean.TRUE : Boolean.FALSE;
