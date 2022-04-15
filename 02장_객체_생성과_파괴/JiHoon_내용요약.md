@@ -411,7 +411,7 @@ public class SpellChecker{
 ```
 > 테스트 코드 작성의 문제와 사전을 언어별로 보고 싶은 경우 문제가 생긴다.
 > 필드에서 final 한정자를 제거하고 다른 메서드를 추가하는 방식도 가능하지만 어색하고 오류를 내기 쉬우며, 멀티스레드 환경에서는 쓸 수 없다.
-
+> 
 <hr/>
 
 ### ✅ SpellChecker가 여러 사전을 이용하도록 수정
@@ -795,3 +795,60 @@ public static void main(String[] args) {
 
 - 해결책 3) 콜백을 약한 참조(weak refernce)로 저장하면 가비지 컬렉터가 즉시 수거해간다.
 > 예를 들어 WeakHashMap에 키로 저장하면 된다.
+
+## 아이템 8. finalizer와 cleaner 사용을 피하라
+> 자바에서 객체 소멸은 GC가 담당하고, 비메모리 자원회수는 try-with-recources, try-finally로 해결한다.  
+
+### ✅  finalizer
+  - 예측할 수 없고 상황에 따라 위험할 수 있어서 일반적으로 불필요.
+  - 오작동, 낮은 성능, 이식성 문제의 원인이 됨
+  - 자바9 부터 `deprecated API`로 지정하며 `cleaner를` 대안으로 사용
+### ✅  cleaner 
+  - `finaliezer` 보다 덜 위험하지만 여전히 예측할 수 없고, 느리고, 똑같이 일반적으로 불필요함.
+
+<hr/>
+
+### ⛔️ finalizer && cleaner 의 문제
+#### 문제 1. 자바에서 접근할 수 없게 된 객체는 가비지 컬렉터가 회수하고 프로그래머는 아무런 작업도 하지 않아도 된다.
+  > 만약 비메모리 자원을 회수해야 한다면 try-with-resources 와 try-finally를 이용해 해결해야 한다.
+#### 문제 2. 예측할 수 없다 
+  - 내가 원하는 때 즉시 실행 되어야 하는 작업은 절대 할 수 없다.
+  - `finalizer`는 다른 쓰레드보다 우선순위가 낮아 실행될 기회를 얻지 못하고 쌓이다가 `OutOfMemoryError`가 발생할 수 있다. 
+#### 문제 3. 상태를 영구적으로 수정하는 작업에서는 절대 `finalizer`나 `cleaner`에 의존해서는 안된다.
+  - 예시로 데이터베이스의 공유 자원의 락(lock) 해제를 `finalizer`나 `cleaner`에게 맡기면 분산 시스템 전체가 서서히 멈출 수 있다.
+    > 자바 언어 명세는 `finalizer`와 `cleaner`의 수행 시점,여부 조차 보장하지 않는다.
+  - System.gc나 system.runFinalization 메서드를 사용하더라도 finalizer나 cleaner의 실행 가능성을 높여줄 수는 있으나 실행을 보장해주진 않는다.
+#### 문제 4. finalizer와 cleaner은 심각한 성능 문제도 동반한다.
+  - 책의 예시로는 `AutoCloseable` 객체를 생성하고 GC가 수거하기 까지 : 12ns걸리지만, `finalizer`를 사용하면 550ns가 걸린다. 
+  - 안전망을 설치하는 대가로 성능이 약 5배 정도 느려진다는 이야기이다.
+#### 문제 5. finalizer를 사용한 클래스는 finalizer 공격에 노출되어 심각한 보안 문제를 일으킬 수 있다.
+  - 생성자나 직렬화 과정에서 예외가 발생하면 `finalizer`가 수행되는데   
+`finalizer`를 악의적으로 오버라이딩한 하위 클래스의 `finalizer`가 수행 될 수 있다.
+    > finalizer를 final로 선언하여 오버라이딩하지 못하게 하는 것으로 해결 할 수 있다.
+    > [finalizer로 어떻게 공격을 하는 것인가 [나만의 인덱스 블로그]](https://yangbongsoo.tistory.com/8?category=919799) 
+
+
+<hr/>
+
+### ❓ 대안이 있는것인가
+#### 대안 1. AutoCloseable
+  - 파일이나 쓰레드 등 종료해야 할 자원에 `AutoCloseable`을 구현한다.
+  - 그 뒤 `close` 메소드를 호출하면 된다.
+#### 대안 2. try-with-resources를 사용해 자동으로 close될 수 있도록 한다.
+> 각 인스턴스는 자신이 닫혔는지 추적하는 것이 제일 좋다.
+
+<hr/> 
+
+### ✅ 적절한 사용처
+#### 사용처 1. AutoCloseable를 구현하지 않았을 경우를 대비한 안전망 역할이 필요할 때
+#### 사용처 2. 네티이브 피어와 연결된 객체
+
+<details>
+<summary>네이티브 피어란?</summary>
+<div markdown="1">
+  - 네이티브 피어는 C/C++이나 어셈블리 프로그램을 컴파일한 기계어 프로그램을 지징합니다. <br/>
+  - 이를 라이브러리로써 자바 피어가 실행 할 수 있게 해주는 인터페이스를 JNI(Java Native Interface)라고 합니다. <br/>
+  - 자바 피어가 정적으로 System.loadLibrary() 메소드를 호출해 네이티브 피어를 로딩하고 네이티브 메소드는 native 키워드를 사용해 호출 하는 방식으로 사용한다.
+</div>
+</details>
+
