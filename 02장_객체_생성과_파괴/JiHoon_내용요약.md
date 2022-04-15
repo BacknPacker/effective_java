@@ -839,16 +839,102 @@ public static void main(String[] args) {
 
 <hr/> 
 
-### ✅ 적절한 사용처
+### ❓ 언제 사용하는 것일까?
 #### 사용처 1. AutoCloseable를 구현하지 않았을 경우를 대비한 안전망 역할이 필요할 때
-#### 사용처 2. 네티이브 피어와 연결된 객체
+  - 자바 라이브러리의 `FileInputStream`, `FileOutputStream`, `ThreadPoolExecutor` 대표적
+#### 사용처 2. 네이티브 피어와 연결된 객체
 
-<details>
-<summary>네이티브 피어란?</summary>
-<div markdown="1">
-  - 네이티브 피어는 C/C++이나 어셈블리 프로그램을 컴파일한 기계어 프로그램을 지징합니다. <br/>
-  - 이를 라이브러리로써 자바 피어가 실행 할 수 있게 해주는 인터페이스를 JNI(Java Native Interface)라고 합니다. <br/>
-  - 자바 피어가 정적으로 System.loadLibrary() 메소드를 호출해 네이티브 피어를 로딩하고 네이티브 메소드는 native 키워드를 사용해 호출 하는 방식으로 사용한다.
-</div>
-</details>
+  <details>
+    <summary>네이티브 피어란?</summary>
+    <div markdown="1">
+      - 네이티브 피어는 `C/C++` 혹은 `어셈블리 프로그램`을 컴파일한 기계어 프로그램을 지징합니다. <br/>
+      - 이를 라이브러리로써 `자바 피어`가 실행 할 수 있게 해주는 인터페이스를 `JNI(Java Native Interface)`라고 합니다. <br/>
+      - 자바 피어가 정적으로 `System.loadLibrary()` 메소드를 호출해 `네이티브 피어`를 로딩하고 `네이티브 메소드`는 `native 키워드`를 사용해 호출 하는 방식으로 사용한다.
+
+      > 대부분 maven central에서 가져올 자바 라이브러리를 사용하기 때문에 실상 JNI를 쓸 일은 거의 없다고 합니다.
+    </div>
+  </details>
+
+  - 자바 객체가 아니기 때문에 GC에서는 이 존재를 알지 못함 -> `cleaner` 혹은 `finalizer`가 나서서 처리하기에 적절하다.
+  > 단 성능저하를 감당할 수 없거나 네이티브 피어가 사용하는 자원을 `즉시 회수`해야 한다면 앞서 설명한 `close` 메서드를 사용해야만 한다.
+
+### ✅  예제
+
+```java
+public class Room implements AutoCloseable{
+    private static final Cleaner cleaner = Cleaner.create();
+
+    // Room을 참조해서는 안된다.
+    // Room을 참조하게 되면 순환 참조가 일어나게 된다.
+    // -> 
+    private static class State implements Runnable {
+        int numJunkPiles; // 수거할 자원
+
+        public State(final int numJunkPiles) {
+            this.numJunkPiles = numJunkPiles; // 수거대라고 생각
+        }
+        /**
+         * 1. close() 를 호출 할 때
+         * 2. cleaner(안전망)
+         */
+        @Override
+        public void run() {
+            System.out.println("방 청소 진행 중");
+            numJunkPiles = 0;
+        }
+    }
+
+    private final State state;
+
+    private final Cleaner.Cleanable cleanable;
+
+    public Room(final int numJunkFiles) {
+        this.state = new State(numJunkFiles);
+        cleanable = cleaner.register(this, state); // Runnable 객체를 등록
+    }
+
+    @Override
+    public void close() throws Exception {
+        cleanable.clean();
+    }
+}
+```
+### ✅  test 코드
+``` java 
+@Test
+@DisplayName("방 청소 테스트")
+void autoClean() throws Exception {
+    // 잘 짜여진 클라이언트 코드 예시 (try-with-resources)
+    try (Room myRoom = new Room(7)) {
+        System.out.println("청소 시작");
+    } finally {
+        System.out.println("청소 완료");
+    }
+}
+
+@Test
+@DisplayName("방 청소 테스트 언제 할거야?")
+void notClean() throws Exception {
+    Room room = new Room(7);
+    // "방 청소 진행 중"은 절대로 출력되지 않는다.
+    // 직접 close를 호출해야만 한다.
+    // room.close(); 
+    System.out.println("제발 청소 좀 해");
+}
+```
+![image](https://user-images.githubusercontent.com/53300830/163536949-d3d88d40-4efc-483d-8621-199d630fcfad.png)
+![image](https://user-images.githubusercontent.com/53300830/163539608-7a9012b9-1d22-4709-950b-4758c868f572.png)
+
+> 첫 번째는 try-with-resources로 잘 짜여진 예시이며, 두 번째는 절대로 사용하면 안되는 예시이다.  
+언제 실행될지 예측을 할 수 없기 때문이다.
+
+## 아이템9. try-finally 보다는 try-with-resources를 사용하라.
+
+### 자바 라이브러리에서 close 메서드를 호출해 직접 닫아줘야 하는 자원들이 있다.
+- `InputStream` `OutputStream` `java.sql.Connection`
+- 이러한 자원들을 닫아주는 클라이언트가 놓치기 쉬워 예측할 수 없는 성능 문제로 이어지기도 한다.
+- 상당수가 안전망으로 finalizer를 활용하지만 `아이템 8` 에서 이야기하듯 사용하는 것에는 단점이 너무 많다.
+> close 해주기 위해 try-finally가 사용 됐다.
+
+
 
