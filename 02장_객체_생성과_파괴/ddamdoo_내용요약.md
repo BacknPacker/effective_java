@@ -195,7 +195,7 @@ public static <E extends Enum<E>> EnumSet<E> noneOf(Class<E> elementType) {
   - `서비스 등록 API` : 제공자가 구현체를 등록할 때 사용
   - `서비스 접근 API` : 클라이언트가 서비스의 인스턴스를 얻을 때 사용
 - 종종 사용되는 네 번째 컴포넌트
-  - `서비스 제공자 인터페이스` : 서비스 인터페이스의 인스턴스를 생성하는 팩터리 객체
+  - `서비스 제공자 인터페이스` : 서비스 인터페이스의 인스턴스를 생성하는 팩토리 객체
 
 
 
@@ -703,4 +703,80 @@ public enum Book{
 하지만 이러한 경우 생성자를 명시하지 않으면 컴파일러에서 자동으로 기본 생성자를 생성하여 사용자가 구분이 어렵다.
 
 - 이는 private 생성자를 추가하여 클래스의 인스턴스화를 막으면 된다.
+
+
+
+---
+
+
+
+## Item 5. 자원을 직접 명시하지 말고 의존 객체 주입을 사용하라.
+
+
+
+정적 유틸리티와 싱글톤을 잘못 사용한 예시이다.
+
+```java
+//정적 유틸리티
+public class SpellChecker{
+	private static final Lexicon dictionary;
+	private SpellChecker() {}
+    
+	public static boolean isValid(String word){}
+	public static List<String> suggestions(String typo){}
+}
+
+//싱글톤
+public class SpellChecker{
+	private static final Lexicon dictionary;
+	private SpellChecker() {} 
+	public static SpellChecker INSTANCE = new SpellChecker();
+
+	public static boolean isValid(String word){}
+	public static List<String> suggestions(String typo){}
+}
+```
+
+이 두 코드는 유연하지 않고, 테스트가 어렵다. 그 이유는 아래와 같다.
+
+- 사용할 사전이 단 한 가지라고 생각하고 있다.
+- 의존하는 객체를 직접 생성하고 있다.
+
+여기서 dictionary 필드에서 final 한정자를 제거하고 다른 사전으로 교체하는 메서드를 추가하면 여러 사전을 사용할 수 있지만, 오류를 내기 쉽고, 멀티스레드 환경에서는 사용이 불가능하다.
+
+사용하는 자원에 따라 동작이 달라지는 클래스는 정적 유틸리티 클래스나 싱글톤 방식이 적합하지 않다. 이러한 경우에는 클래스가 여러 자원 인스턴스를 지원하고, 클라이언트가 원하는 자원을 사용하도록 해야 한다.
+
+```java
+public class SpellChecker{
+	private final Lexicon dictionary;
+    
+	public SpellChecker(Lexicon dictionary){
+		this.dictionay = Objects.requiredNonNull(dictionay);
+	}
+	
+    public boolean isValid(String word){}
+	public List<String> suggestions(String typo){}
+}
+```
+
+#### 의존성 객체 주입(dependency injection)
+
+*   필요한 객체를 직접 생성하는 것이 아닌 외부로부터 필요한 객체를 받아서 사용하는 것
+
+
+
+##### 의존 객체 주입 패턴의 장점
+
+* 유연하고 테스트가 쉽다.
+
+- 자원의 개수나 의존관계에 상관없이 잘 동작한다.
+- 여러 클라이언트가 의존 객체들을 공유 가능하다.
+
+
+
+의존 객체 주입은 유연성과 테스트 용이성을 개선해주지만, 의존성이 많은 경우 코드를 어지럽게 할 수 있지만 **의존 객체 주입 프레임워크**인 대거, 주스, 스프링 등을 사용하면 해소 가능하다.
+
+​	ex) 스프링 의존성 주입
+
+* 외부에서 객체를 생성한 후 의존성을 주입시키는 방식으로, 생성자 이용방식, Field 변수 이용방식, setter 이용방식이 있다.
 
