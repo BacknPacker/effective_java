@@ -73,17 +73,36 @@
 
 #### ⛔️ 이전 코드
 ```java
+// 싱글턴을 잘못 사용한 예 - 유연하지 않고 테스트하기 어렵다
+public class SpellChecker{
+  private static final Lexicon dictionary = ...; // 사전에 의존한다.
+  
+  private SpellChecker(...) {} 
+  public static SpellChecker INSTANCE = new SpellChecker(...);
 
+  public static boolean isValid(String word){...}
+  public static List<String> suggestions(String typo){...}
+}
 ```
-<br>
 
 #### ✅ 변경 후 코드
 ```java
-
+// 의존 객체 주입은 유연성과 테스트 용이성을 높여준다 
+public class SpellChecker{
+  private final Lexicon dictionary;
+  
+  public SpellChecker(Lexicon dictionary){ // 의존 객체 주입
+    this.dictionay = Objects.requiredNonNull(dictionay);
+  }
+  
+  public boolean isValid(String word){...}
+  public List<String> suggestions(String typo){...}
+}
 ```
-<br>
 
 #### 📋 코드리뷰 정리
+- 이전코드는 테스트코드 작성이 어려웠던 반면 변경후에는 테스트 코드 작성하는데 무리가 없다.
+- 불변을 보장할 수 있다.
 
 ## 아이템 6. 불필요한 객체 생성을 피하라.
 
