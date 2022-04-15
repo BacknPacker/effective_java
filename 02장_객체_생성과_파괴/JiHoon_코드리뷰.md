@@ -1,21 +1,47 @@
 # 2장. 객체 생성과 파괴
 
 ## 아이템 1. 생성자 대신 정적 팩터리 메서드를 고려하라.
-<br>
 
-#### 이전 코드
+#### ⛔️ 이전 코드
 ```java
 
-```
-<br>
+private String color; // 카드 색상
+private int paymentLimit; // 결제한도
 
-#### 변경 후 코드
+// 결제 한도에 따른 색상이 다르다. 
+// 파라미터가 완전히 동일한 시그니처가 2개 이상 존재 할 수 없다.
+public Card(int paymentLimit) {
+    this.paymentLimit = paymentLimit;
+    this.color = "red";
+}
+
+public Card(int paymentLimit) {
+    this.paymentLimit = paymentLimit;
+    this.color = "blue";
+}
+```
+
+#### ✅ 변경 후 코드
 ```java
+// 시그니처가 동일한 경우 정적 팩토리 메소드를 고려하라
+public static Card createBlueCard(int paymentLimit) { // 객체의 특성을 고려한 이름
+    Card card = new Card();
+    card.color = "blue";
+    card.paymentLimit = paymentLimit;
+    return card;
+}
 
+public static Card createGreenCard(int paymentLimit) {
+    Card card = new Card();
+    card.color = "green";
+    card.paymentLimit = paymentLimit;
+    return card;
+}
 ```
-<br>
 
-#### 코드리뷰 정리
+#### 📋 코드리뷰 정리
+- 객체의 특성을 훨씬 잘 표현할 수 있다.
+- 같은 파라미터를 가진 시그니처를 생성할 때 사용할 수 있다.
 
 ## 아이템 2. 생성자에 매개변수가 많다면 빌더를 고려하라.
 > 편의상 빌더 패턴과 매개변수들은 작성이 돼 있다는 전제하에 코드 작성했습니다.
