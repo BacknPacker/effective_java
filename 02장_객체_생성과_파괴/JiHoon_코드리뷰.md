@@ -124,22 +124,81 @@
 ## 아이템 8. finalizer와 cleaner 사용을 피하라
 <br>
 
+#### 공통 코드
+```java
+public class Room implements AutoCloseable{
+    private static final Cleaner cleaner = Cleaner.create();
+
+    // Room을 참조해서는 안된다.
+    // Room을 참조하게 되면 순환 참조가 일어나게 된다.
+    private static class State implements Runnable {
+        int numJunkPiles; // 수거할 자원
+
+        public State(final int numJunkPiles) {
+            this.numJunkPiles = numJunkPiles; // 수거대라고 생각
+        }
+        /**
+         * 1. close() 를 호출 할 때
+         * 2. cleaner(안전망)
+         */
+        @Override
+        public void run() {
+            System.out.println("방 청소 진행 중");
+            numJunkPiles = 0;
+        }
+    }
+
+    private final State state;
+
+    private final Cleaner.Cleanable cleanable;
+
+    public Room(final int numJunkFiles) {
+        this.state = new State(numJunkFiles);
+        cleanable = cleaner.register(this, state); // Runnable 객체를 등록
+    }
+
+    @Override
+    public void close() throws Exception {
+        cleanable.clean();
+    }
+}
+```
+
 #### 이전 코드
 ```java
-
+@Test
+@DisplayName("방 청소 테스트 언제 할거야?")
+void notClean() throws Exception {
+    Room room = new Room(7);
+    // "방 청소 진행 중"은 절대로 출력되지 않는다.
+    // 직접 close를 호출해야만 한다.
+    // room.close(); 
+    System.out.println("제발 청소 좀 해");
+}
 ```
-<br>
+![image](https://user-images.githubusercontent.com/53300830/163536949-d3d88d40-4efc-483d-8621-199d630fcfad.png)
 
 #### 변경 후 코드
 ```java
-
+@Test
+@DisplayName("방 청소 테스트")
+void autoClean() throws Exception {
+    // 잘 짜여진 클라이언트 코드 예시 (try-with-resources)
+    try (Room myRoom = new Room(7)) {
+        System.out.println("청소 시작");
+    } finally {
+        System.out.println("청소 완료");
+    }
+}
 ```
-<br>
+![image](https://user-images.githubusercontent.com/53300830/163539608-7a9012b9-1d22-4709-950b-4758c868f572.png)
 
 #### 코드리뷰 정리
+- try-finally로 바꾸자 정상적으로 호출하는 모습을 볼 수 있다.
+- 그 반면 이전 코드는 close()를 호출하지 않고 내가 원하는 때에 실행이 되지 않는다.
+
 
 ## 아이템9. try-finally 보다는 try-with-resources를 사용하라.
-<br>
 
 #### 이전 코드
 ```java
@@ -163,7 +222,6 @@ static void tryFinally(String src, String dst) throws IOException {
     }
 }
 ```
-<br>
 
 #### 변경 후 코드
 ```java
@@ -180,8 +238,8 @@ static void tryWithResources(String src, String dst) throws IOException {
 }
 
 ```
-<br>
 
 #### 코드리뷰 정리
 - 디버깅이 힘들다는 단점이 보완된다. 
-- 코드의 가독성 향상
+- 코드의 가독성 향상이 된다.
+- `try-finally` 말고 `try-with-resources`를 사용하는 것으로 통일하는 것이 좋다.
