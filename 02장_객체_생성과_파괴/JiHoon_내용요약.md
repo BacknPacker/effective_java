@@ -936,5 +936,50 @@ void notClean() throws Exception {
 - 상당수가 안전망으로 finalizer를 활용하지만 `아이템 8` 에서 이야기하듯 사용하는 것에는 단점이 너무 많다.
 > close 해주기 위해 try-finally가 사용 됐다.
 
+### ✅ try-finally 방식
+```java
+// 9-2 try-finally 방식
+// 자원이 둘 이상이면 너무 지저분해진다.
+// in.read에서 문제가 생길수 있고, close() 할때도 문제가 생길수 있다.
+static void tryFinally(String src, String dst) throws IOException {
+    InputStream in = new FileInputStream(src);
+    try {
+        OutputStream out = new FileOutputStream(dst);
+        try {
+            byte[] buf = new byte[BUFFER_SIZE];
+            int n;
+            while ((n = in.read(buf)) >= 0)
+                out.write(buf, 0, n);
+        } finally {
+            out.close();
+        }
+    } finally {
+        in.close();
+    }
+}
+```
+> 디버깅이 너무 어려워진다. in.read가 동작이 실패해 예외가 발새아면 close() 메소드도 실패하며  
+예외가 발생하게 되는데, 후자의 예외(close)가 전자의 예외(read)를 가려버리게 돼 스택 추적이 힘들어진다.
+
+### ✅ try-with-resources 방식
+
+```java
+// try-with-resources 방식
+// 짧고 읽기 쉬우며, 문제를 진단하기도 훨씬 좋다.
+static void tryWithResources(String src, String dst) throws IOException {
+    try (InputStream in = new FileInputStream(src);
+         OutputStream out = new FileOutputStream(dst)) {
+        byte[] buf = new byte[BUFFER_SIZE];
+        int n;
+        while ((n = in.read(buf)) >= 0)
+            out.write(buf, 0, n);
+    }
+}
+```
+> 사용하려는 자원이 AutoCloseable 인터페이스를 구현해야 한다.  
+하지만 대부분의 자바라이브러리와 서드파티 라이브러리들의 수많은 클래스와 인터페이스가 이미 구현하거나 확장해둔 상태이니 신경을 안써도 된다.
+
+### 📋 결론
+자원회수가 필요하면 `try-with-resources`를 사용하는 것으로 통일을 하는 것이 좋다.
 
 
