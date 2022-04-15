@@ -71,60 +71,100 @@
 ## 아이템 5. 자원을 직접 명시하지 말고 의존 객체 주입을 사용하라.
 <br>
 
-#### 이전 코드
+#### ⛔️ 이전 코드
 ```java
 
 ```
 <br>
 
-#### 변경 후 코드
+#### ✅ 변경 후 코드
 ```java
 
 ```
 <br>
 
-#### 코드리뷰 정리
+#### 📋 코드리뷰 정리
 
 ## 아이템 6. 불필요한 객체 생성을 피하라.
-<br>
 
-#### 이전 코드
+#### ⛔️ 이전 코드
 ```java
-
+@Test
+@DisplayName("오토박싱 테스트")
+public void 오토박싱() {
+    Long sum = 0L;
+    for (long i = 0; i <= Integer.MAX_VALUE; i++) sum += i; // 오토박싱 발생
+}
 ```
-<br>
-
-#### 변경 후 코드
+![image](https://user-images.githubusercontent.com/53300830/163193780-a323cab6-6d15-4598-baa6-2f697abf81b4.png)
+#### ✅ 변경 후 코드
 ```java
-
+@Test
+@DisplayName("오토박싱 해결 테스트")
+public void 오토박싱해결() {
+    long sum = 0L; // Long -> long 변경
+    for (long i = 0L; i <= Integer.MAX_VALUE; i++) sum += i; // long 타입 통일로 인해 오토박싱 해결
+}
 ```
-<br>
-
-#### 코드리뷰 정리
+![image](https://user-images.githubusercontent.com/53300830/163193733-5e0a4840-7755-41ac-9f81-dec9b760adcd.png)
+#### 📋 코드리뷰 정리
+- 오토박싱이나 언박싱을 할경우 성능 저하가 엄청 심하다는 것을 알 수 있었다.
+- 타입을 프리티머브 타입으로 바꾸면서 성능이 확실히 개선 된 모습을 볼 수 있다.
 
 # 2장. 객체 생성과 파괴
 
 ## 아이템 7. 다 쓴 객체 참조를 해제하라.
 <br>
 
-#### 이전 코드
+#### ⛔️ 이전 코드
 ```java
+public static void main(String[] args) {
+    HashMap<Integer, String> map = new HashMap<>();
+    Integer key1 = 1000;
+    Integer key2 = 2000;
 
+    map.put(key1, "test a");
+    map.put(key2, "test b");
+
+    key1 = null; // null 처리해줬지만 HashMap에서는 동기화가 되지 않는다.
+
+    System.gc();  // 강제 Garbage Collection 호출
+
+    map.entrySet().forEach(el -> System.out.println(el));
+}
 ```
-<br>
 
-#### 변경 후 코드
+![image](https://user-images.githubusercontent.com/53300830/163341874-73c633e1-46fc-4806-98d9-de0a8527c3d0.png)
+> key1.value 및 size 전부 살아있는 모습을 볼 수 있다.  
+> 살아있는 캐시로 인해 메모리 누수가 발생중인 모습이다.
+
+#### ✅ 변경 후 코드
 ```java
+public static void main(String[] args) {
+    WeakHashMap<Integer, String> map = new WeakHashMap<>();
+    Integer key1 = 1000;
+    Integer key2 = 2000;
 
+    map.put(key1, "test a");
+    map.put(key2, "test b");
+
+    key1 = null; // (key1,"test a") 자동으로 삭제
+
+    System.gc();  // 강제 Garbage Collection 호출
+
+    map.entrySet().forEach(el -> System.out.println(el));
+}
 ```
-<br>
+![image](https://user-images.githubusercontent.com/53300830/163341624-43fd86ad-bc95-463d-8ba3-df88a6ad0d2d.png)
+> key1과 key1.value 값이 사라진 것을 볼 수 있다.
 
-#### 코드리뷰 정리
+#### 📋 코드리뷰 정리
+- 메모리 누수를 생각하면 WeakHashMap을 사용하는 것을 고려해봐야한다.
 
 ## 아이템 8. finalizer와 cleaner 사용을 피하라
 <br>
 
-#### 공통 코드
+#### ✏️ 공통 코드
 ```java
 public class Room implements AutoCloseable{
     private static final Cleaner cleaner = Cleaner.create();
@@ -164,7 +204,7 @@ public class Room implements AutoCloseable{
 }
 ```
 
-#### 이전 코드
+#### ⛔️ 이전 코드
 ```java
 @Test
 @DisplayName("방 청소 테스트 언제 할거야?")
@@ -178,7 +218,7 @@ void notClean() throws Exception {
 ```
 ![image](https://user-images.githubusercontent.com/53300830/163536949-d3d88d40-4efc-483d-8621-199d630fcfad.png)
 
-#### 변경 후 코드
+#### ✅ 변경 후 코드
 ```java
 @Test
 @DisplayName("방 청소 테스트")
@@ -193,14 +233,14 @@ void autoClean() throws Exception {
 ```
 ![image](https://user-images.githubusercontent.com/53300830/163539608-7a9012b9-1d22-4709-950b-4758c868f572.png)
 
-#### 코드리뷰 정리
+#### 📋 코드리뷰 정리
 - try-finally로 바꾸자 정상적으로 호출하는 모습을 볼 수 있다.
 - 그 반면 이전 코드는 close()를 호출하지 않고 내가 원하는 때에 실행이 되지 않는다.
 
 
 ## 아이템9. try-finally 보다는 try-with-resources를 사용하라.
 
-#### 이전 코드
+#### ⛔️ 이전 코드
 ```java
 // 9-2 try-finally 방식
 // 자원이 둘 이상이면 너무 지저분해진다.
@@ -223,7 +263,7 @@ static void tryFinally(String src, String dst) throws IOException {
 }
 ```
 
-#### 변경 후 코드
+#### ✅ 변경 후 코드
 ```java
 // 9-4. try-with-resources 방식
 // 짧고 읽기 쉬우며, 문제를 진단하기도 훨씬 좋다.
@@ -239,7 +279,7 @@ static void tryWithResources(String src, String dst) throws IOException {
 
 ```
 
-#### 코드리뷰 정리
+#### 📋 코드리뷰 정리
 - 디버깅이 힘들다는 단점이 보완된다. 
 - 코드의 가독성 향상이 된다.
 - `try-finally` 말고 `try-with-resources`를 사용하는 것으로 통일하는 것이 좋다.
