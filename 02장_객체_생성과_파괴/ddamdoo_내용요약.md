@@ -780,3 +780,97 @@ public class SpellChecker{
 
 * 외부에서 객체를 생성한 후 의존성을 주입시키는 방식으로, 생성자 이용방식, Field 변수 이용방식, setter 이용방식이 있다.
 
+
+
+---
+
+
+
+## Item 6. 불필요한 객체 생성을 피하라.
+
+똑같은 기능의 객체는 매번 생성하기 보다는 재사용하는 것이 빠르고 효율적이다.
+
+예를 들어서 아래와 같은 객체 생성이 있다고 하자.
+
+```java
+String s1 = new String("string");
+String s2 = "string";
+```
+
+위의 문장은 실행될 때마다 String 인스턴스를 생성하기 때문에 쓸모없는 인스턴스를 여러 번 생성하여 효율적이지 못하다. 그 밑에 작성된 코드는 하나의 인스턴스를 사용하기 때문에 재사용성이 보장된다.
+
+>String interning과 String pooling의 차이
+>
+>https://ict-nroo.tistory.com/18
+>
+>https://www.journaldev.com/797/what-is-java-string-pool
+
+
+
+또한 생성 비용이 큰 객체의 경우 캐싱을 사용하는 것이 좋다. 여기서 말하는 생성 비용이 비싼 객체란 책에 언급된 **pattern object**나 **크기가 아주 큰 Array**, **Database Connection**, **I/O 작업을 필요로 하는 Object** 등을 말한다.
+
+아래에 간단하게 크기가 큰 배열을 만들어서 캐싱을 할 때와 안 할 때의 속도 비교를 해보았다.
+
+```java
+public class Caching {
+    private static int[] caching = new int[100000];
+
+    public static void main(String[] args) {
+        long beforeTime = System.currentTimeMillis();
+
+        for (int i = 0; i < 50000; i++) {
+            caching[i] = 1;
+        }
+        System.out.println("caching second : " + (float)(System.currentTimeMillis() - beforeTime) / 1000);
+
+        beforeTime = System.currentTimeMillis();
+
+        for (int i = 0; i < 50000; i++) {
+            int[] nonCaching = new int[100000];
+            nonCaching[i] = 1;
+        }
+        System.out.println("non caching second : " + (float)(System.currentTimeMillis() - beforeTime) / 1000);
+    }
+}
+```
+
+##### ![1650030754351](ddamdoo_내용요약.assets/1650030754351.png)
+
+대충 어마어마하게 큰 속도차이가 난다는 것을 알 수 있다.
+
+
+
+불변 객체인 경우에 안정하게 재사용하는 것이 매우 명확하지만 반대의 경우가 존재하긴 한다. 어댑터(뷰)는 실제 작업은 뒷단에 있는 객체에 위임하고, 본인은 뒷단 객체를 관리만 하면 되기 때문에 뒷단 객체 한 개당 한 개씩만 만들어지면 된다.
+
+
+
+#### 오토 박싱
+
+오토 박싱은 불필요한 객체를 만들어내는 또 하나의 예시로 개발자가 기본 타입과 박싱된 기본 타입을 혼용해서 사용하는 경우 자동으로 상호 변환해주는 기술이다. 오토박싱을 통해서 기본타입과 박싱된 기본타입의 구분이 모호해지긴 하지만 **완전히 없애주는 것은 아니다.**
+
+이 또한 자바 코드로 속도를 비교해보았다.
+
+```java
+public class AutoBoxing {
+  public static void main(String[] args) {
+    long beforeTime = System.currentTimeMillis();
+
+    Long sum = 0L;
+    for (long i = 0; i <= Integer.MAX_VALUE; i++) {
+      sum += i;
+    }
+    System.out.println("auto-boxing : " + (float)(System.currentTimeMillis() - beforeTime) / 1000);
+
+    beforeTime = System.currentTimeMillis();
+    long sum1 = 0L;
+    for (long i = 0; i <= Integer.MAX_VALUE; i++) {
+      sum1 += i;
+    }
+    System.out.println("non auto-boxing : " + (float)(System.currentTimeMillis() - beforeTime) / 1000);
+  }
+}
+```
+
+##### ![1650031299764](ddamdoo_내용요약.assets/1650031299764.png)
+
+결과는 대략 9배 정도의 성능차이가 났다. 따라서 오토박싱에서도 비용이 발생하므로 이러한 부분을 주의해서 코드를 작성해야 한다.
