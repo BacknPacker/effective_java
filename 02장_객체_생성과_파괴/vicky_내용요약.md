@@ -401,3 +401,25 @@ public class Room implements AutoCloseable {
 ```
 + cleaner는 안전망 역할이나 중요하지 않은 네이티브 자원 회수용으로만 사용하자. 
   + 이런 경우는 불확실성과 성능저하에 주의해야 한다.
+
+
+## 아이템9. Try-finally보다는 try-with-resource를 사용하라.
+
+### 자바에는 close 메서드를 직접 호출해야만 하는 자원이 많다.
+
+### try-finally의 한계
++ 자원이 둘 이상인 경우 코드가 지저분해진다
++ 두 번째 예외적용으로 첫 번째 예외에 대한 정보를 남기지 않게 된다.
+
+### 꼭 회수해야 하는 자원을 다룰때는 try-with-resource를 사용하자
+```java
+static void copy(String src, String dst) throws IOException {
+  try(InputStream in = new FileInputStream(src);
+      OutputStream out = new FileOutputStream(dst)) {
+    Byte[] buf = new byte[BUFFER_SIZE];
+    Int n;
+    while((n=in.read(buf))>=0)
+        out.write(buf,0,n);
+  }
+}
+```
