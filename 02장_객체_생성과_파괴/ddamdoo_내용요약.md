@@ -2,7 +2,7 @@
 
 
 
-## Item 1. 생성자 대신 정적 팩토리 메서드를 고려하라.
+## Item 1. 생성자 대신 정적 팩토리 메소드를 고려하라.
 
 클래스에서 인스턴스를 얻는 전통적인 수단은 public 생성자를 이용하는 방식이다.
 
@@ -42,7 +42,7 @@ class Book {
 }
 ```
 
-Book이라는 생성자를 이용한 book1이라는 객체보다 팩토리 메서드를 이용하게 되면 코드를 좀 더 직관적으로 쉽게 파악이 가능하다.
+Book이라는 생성자를 이용한 book1이라는 객체보다 팩토리 메소드를 이용하게 되면 코드를 좀 더 직관적으로 쉽게 파악이 가능하다.
 
 
 
@@ -184,7 +184,7 @@ public static <E extends Enum<E>> EnumSet<E> noneOf(Class<E> elementType) {
 
 
 
-#### 5. 정적 팩토리 메서드를 작성하는 시점에 반환할 객체의 클래스가 존재하지 않아도 된다.
+#### 5. 정적 팩토리 메소드를 작성하는 시점에 반환할 객체의 클래스가 존재하지 않아도 된다.
 
 이러한 유연함 덕에 서비스 제공자 프레임워크를 만들 수 있다.
 
@@ -569,7 +569,7 @@ Item2 라는 클래스는 분변이고, 필수 및 선택적 매개변수들을 
 
 각각 하위 클래스인 `NyPizza.java`와 `Calzone.java`의 빌더가 정의한 build 메소드는 해당하는 구현 하위 클래스인 NyPizza와 Calzone을 반환한다.
 
-이 케이스처럼 **하위 클래스의 메서드가 상위의 메서드가 정의한 반환 타입이 아니라 그 하위 타입을 반환하는 기능**을 `공변 반환 타이핑(covariant return typing)` 이라 한다. 이 기능을 사용하면 클라이언트가 형변환에 신경쓰지 않아도 된다.
+이 케이스처럼 **하위 클래스의 메소드가 상위의 메소드가 정의한 반환 타입이 아니라 그 하위 타입을 반환하는 기능**을 `공변 반환 타이핑(covariant return typing)` 이라 한다. 이 기능을 사용하면 클라이언트가 형변환에 신경쓰지 않아도 된다.
 
 
 
@@ -742,7 +742,7 @@ public class SpellChecker{
 - 사용할 사전이 단 한 가지라고 생각하고 있다.
 - 의존하는 객체를 직접 생성하고 있다.
 
-여기서 dictionary 필드에서 final 한정자를 제거하고 다른 사전으로 교체하는 메서드를 추가하면 여러 사전을 사용할 수 있지만, 오류를 내기 쉽고, 멀티스레드 환경에서는 사용이 불가능하다.
+여기서 dictionary 필드에서 final 한정자를 제거하고 다른 사전으로 교체하는 메소드를 추가하면 여러 사전을 사용할 수 있지만, 오류를 내기 쉽고, 멀티스레드 환경에서는 사용이 불가능하다.
 
 사용하는 자원에 따라 동작이 달라지는 클래스는 정적 유틸리티 클래스나 싱글톤 방식이 적합하지 않다. 이러한 경우에는 클래스가 여러 자원 인스턴스를 지원하고, 클라이언트가 원하는 자원을 사용하도록 해야 한다.
 
@@ -949,7 +949,7 @@ public Object pop() {
 
 
 
-##### Stack이 메모리 누수에 취약한 이유
+#### Stack이 메모리 누수에 취약한 이유
 
 - 자기 자신의 메모리를 직접 관리하기 때문
 - 객체가 아닌 객체 참조를 담는 `elements 배열`로 저장소 풀을 만들어 원소들을 관리함
@@ -962,7 +962,7 @@ stack 이외에도 **자신의 메모리를 직접 관리하는 클래스**는 �
 
 
 
-##### 캐시의 메모리 누수 해결방법
+#### 캐시의 메모리 누수 해결방법
 
 * 캐시 외부에서 키를 참조하는 동안만 엔트리가 살아 있는 캐시가 필요한 경우에는 WeakHashMap을 사용
 
@@ -970,13 +970,146 @@ stack 이외에도 **자신의 메모리를 직접 관리하는 클래스**는 �
   - 이 방법은 유효 기간을 계산하는 것이 어렵기 때문에 엔트리 가치를 떨어뜨리는 방식을 사용한다.
   - 쓰지 않는 엔트리를 청소해준다.
     - `ScheduledThreadPoolExecutor`와 같은 백그라운드 스레드를 활용하거나 캐시에 새 엔트리를 추가할 때 부수 작업으로 수행하는 방법을 이용하면 된다.
-    - `LinkedHashMap`은 `removeEldestEntry `메서드를 사용해 후자의 방식으로 처리한다.
+    - `LinkedHashMap`은 `removeEldestEntry `메소드를 사용해 후자의 방식으로 처리한다.
 
 
 
-##### 리스너(Listener) 혹은 콜백(Callback)의 메모리 누수 해결방법
+#### 리스너(Listener) 혹은 콜백(Callback)의 메모리 누수 해결방법
 
 클라이언트가 콜백을 등록만 하고 해지하지 않는다면 콜백은 쌓이게 될 것이다. 이럴 때 콜백을 약한 참조(weak reference)로 저장하면 GC가 즉시 수거해간다. 예시로 `WeakHashMap`에 키로 저장하는 방법이 있다.
+
+
+
+---
+
+
+
+## Item 8. finalizer와 cleaner 사용을 피하라
+
+#### finalizer
+
+객체 소멸자인 `finalize()` 메소드를 사용하는 것을 말하는 것으로 JVM(Java Virtual Machine)이 실행하는 가비지 컬렉션이 수행될 때 더 이상 사용하지 않는 자원에 대한 정리 작업을 진행하기 위해 호출되는 종료자 메소드
+
+
+
+#### cleaner
+
+자바 9 버전에서 도입된 소멸자로 생성된 Cleaner 가 더 이상 사용되지 않을 때 등록된 스레드에서 정의된 클린 작업을 수행한다.
+
+### finalizer와 cleaner 사용을 피해야 하는 이유
+
+#### 즉시 수행됨을 보장하지 않는다.
+
+ 제 때 실행되어야 정상적으로 객체 소멸을 돕지만 이러한 작업에 대한 보장이 되지 않기 때문에 큰 오류를 발생시킬 수 있다. finalizer와 cleaner가 수행되는 시간은 전적으로 가비지 컬렉터 알고리즘에 달렸으며, 가비지 컬렉터의 종류마다 천차만별이다. 또한 finalizer가 다른 쓰레드보다 우선순위가 낮아 실행될 기회를 얻지 못하고 OutOfMemoryError가 발생할 수 있기 때문에 주의해야 한다.
+
+#### 수행 여부에 대해서 보장하지 않는다.
+
+자바 언어 명세에서는 finalizer와 cleaner의 수행 시점과 수행 여부 모두를 보장하지 않는다고 적혀있다. 따라서 **상태를 영구적으로 수정하는 작업에서는 finalizer와 cleaner에 의존해선 안된다.**
+
+
+
+#### 심각한 성능 문제를 동반한다.
+
+finalizer를 사용하면 가비지 콜렉터의 효율을 떨어뜨리고 대안인 cleaner를 이용하여 안전망 형태로만 사용한다고 하더라도 성능이 느려지기는 한다.
+
+
+
+#### finalizer 공격에 노출된다.
+
+finalizer공격은 생성자나 직렬화 과정에서 예외가 발생하는 경우 악의적인 하위 클래스의 finalizer가 수행될 수 있기 때문에 가비지 컬렉터가 수집하지 못하게 막을 수 있다. final이 아닌 클래스를 finalizer공격으로부터 방어하기 위해서는 기능이 없는 finalizer를 만들고 final로 선언하면 된다.
+
+> finalizer 공격 : https://yangbongsoo.tistory.com/8
+
+
+
+#### AutoCloseable
+
+구문이 끝날 때까지 리소스를 보유할 수 있는 개체로 AutoCloseable 객체의 close() 메소드는 리소스 사양 헤더에 객체가 선언된 try-with-resources 블록을 종료할 때 자동으로 호출됩니다. 이 구성은 리소스 소진 예외 및 발생할 수 있는 오류를 방지하여 신속한 릴리스를 보장합니다.
+
+>https://docs.oracle.com/javase/8/docs/api/java/lang/AutoCloseable.html
+
+close() 메소드에서 이 객체가 더 이상 유효하지 않음을 필드에 기록하고, 다른 메소드는 이 필드를 검사해서 객체가 닫힌 후에 불렸다면 IllegalStateException을 던져서 자기 자신이 제대로 닫혔는지 추적하는 것이 좋다.
+
+
+
+그럼에도 불구하고 finalizer와 cleaner의 쓰임은 두 가지가 있다.
+
+* 자원의 소유자가 close 메소드를 호출하지 않는 것에 대한 안전망 역할
+  * 만약 사용자가 자원 회수를 하지 않는 경우, finalizer와 cleaner가 즉시 회수한다는 보장은 없지만 회수는 하기 때문에 조금이라도 도움이 된다.
+  * `FileInputStream`, `FileOutputStream`, `ThreadPoolExecutor` 등의 클래스가 있다.
+
+* 네이티브 피어와 연결된 객체에서 활용성이 있다.
+
+  * ###### 네이티브 피어 : 일반 자바 객체가 네이티브 메소드를 통해 기능을 위임한 네이티브 객체
+
+  * 자바 객체가 아니기 때문에 가비지 컬렉터에서는 이 존재를 알지 못하기 때문에 cleaner나 finalizer가 나서서 처리하기 좋다.
+
+  * 성능 저하를 감당할 수 없거나 네이티브 피어가 사용하는 자원을 즉시 회수해야 한다면 앞서 설명한 close 메소드를 사용해야 한다.
+
+
+
+#### cleaner를 안전망으로 활용하는 AutoCloseable
+
+```java
+public class Room implements AutoCloseable {
+   private static final Cleaner cleaner = Cleaner.create();
+
+   private static class State implements Runnable {
+      int numJunkPiles;
+
+      State(int numJunkPiles) {
+         this.numJunkPiles = numJunkPiles;
+      }
+
+      @Override public void run(){
+         System.out.println("방 청소");
+         numJunkPiles = 0;
+      }
+   }
+
+   private final State state;
+
+   private final Cleaner.Cleanable cleanable;
+
+   public Room (int numJunkPiles) {
+      state = new State(numJunkPiles);
+      cleanable = cleaner.register(this, state);
+   }
+
+   @Override public void close(){
+      cleanable.clean();
+   }
+}
+```
+
+
+
+State 중첩 클래스 : cleaner가 방을 청소할 때 수거할 자원들을 담고 있음.
+
+- numJunkPiles 필드: 수거해야 하는 자원
+- State는 Runnuble을 구현하고, 그 안의 run 메소드는 cleanable에 의해 딱 한 번만 호출된다. 이 때 cleanable 객체는 Room 생성자에서 cleaner에 Room과 State를 등록할 때 얻는다.
+- 실행을 담당하는 run 메소드가 호출되는 상황
+  - Room의 close 메소드를 호출할 때
+  - 가비지 컬렉터에서 Room을 회수할 때 클라이언트가 close를 호출하지 않을 때
+
+
+
+State 인스턴스는 Room 인스턴스를 참조하게 되는 경우 순환참조가 생겨 가비지 컬렉터가 Room 인스턴스를 회수할 기회조차 주지 않는다. 그러한 이유로 State는 정적 중첩 클래스로 선언되어 바깥 객체의 참조를 갖도록 하는 것이다.
+
+Room의 cleaner는 단지 안전망으로 쓰고, 클라이언트가 모든 Room 생성을 try-with-resources 블록으로 감쌌다면 자동 청소는 전혀 필요하지 않다. 하지만 아래 예시 코드에서 처럼 try-with-resources 블록을 제대로 활용하지 않으면 run 메소드가 출력됨을 보장할 수 없다.
+
+```java
+public class Teenager {
+   public static void main(String[] args) {
+      new Room(99);
+      System.out.println("아무렴");
+   }
+}
+```
+
+cleaner의 명세를 보면 System.exit을 호출할 때의 cleaner의 동작은 구현 나름이고 청소를 할지는 **보장하지 않는다.**라고 되어있다.
+
+> https://docs.oracle.com/javase/9/docs/api/java/lang/ref/Cleaner.html
 
 
 
