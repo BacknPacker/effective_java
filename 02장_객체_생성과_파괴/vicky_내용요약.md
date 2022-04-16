@@ -100,7 +100,7 @@ public class SuperRobotFactory extends RobotFactory {
 
 <hr>
 
-##### TIP
+##### ❗ TIP
 + 정적 팩토리 메소드를 사용하는 경우: Entity, DTO로 변환하는 관계
 + 생성자를 사용하는 경우: 단순히 변수들을 주입할 때
 <hr>
@@ -207,16 +207,38 @@ Private NyPizza(Builder builder) {
 }
 }
 ```
-+ 셀프타입 관용구
-+ 공변반환 클래스
+### 빌더패턴 적용상의 장점
++ 공변반환 클래스 적용
   + 하위 클래스의 메서드가 상위 클래스의 메서드가 정의한 반환 타입이 아닌, 그 하위 타입을 반환하는 기능
 
-### 빌더패턴 사용시 고려사항
-+ 빌더 생성시 매개변수가 4개 이상은 되야 값어치를 한다.
+### 빌더패턴 사용시 고려사항(단점)
++ 빌더 생성시 매개변수가 4개 이상은 되야 값어치를 한다. 오히려 매개변수가 적은 경우 장황해질 수 있다.
 + API는 시간이 지날수록 매개변수가 많아짐을 고려해야 한다.
++ Builder 생성에 의한 비용이 발생
 
-##### ❗ 빌더는 점층적 생성자보다 클라이언트 코드를 읽고 쓰기가 훨씬 간결하고, 자바빈즈보다 안전하다.
+##### 빌더는 점층적 생성자보다 클라이언트 코드를 읽고 쓰기가 훨씬 간결하고, 자바빈즈보다 안전하다.
+<hr>
 
+##### ❗ TIP
++ Builder를 Lombok을 통해서만 사용했을 경우 코드를 다시 살펴볼 필요가 있다.
+```java
+// 제로베이스 인강 예시
+@Data
+@Builder(builderMethodName="hiddenBuilder")
+public class NutritionFacts {
+  private final int servingSize;
+  private final int servings;
+  @Builer.Default private final int calories = 0;
+  @Builer.Default private final int fat = 0;
+  
+  public static NutritionFactsBuilder builder(int servingSize, int servings){
+    return hiddenBuilder()
+            .servingSize(servingSize)
+            .servings(servings);
+  }
+}
+```
+<hr>
 
 ## 아이템3. Private 생성자나 열거 타입으로 싱글턴임을 보증하라.
 
@@ -242,8 +264,12 @@ public class Elvis {
 public class Elvis {
   private static final Elvis INSTANCE = new Elvis();
   private Elvis();
+  
+  // 변형을 가할 수 있는 부분
   public static Elvis getInstance(){ return INSTANCE; }
+  
   public void leaveTheBuilding(){…}
+  
   private Object readResolve(){
       return INSTANCE;
   }
@@ -269,6 +295,14 @@ public enum Elvis {
 + 단 만드려는 싱글턴이 enum 이외의 다른 클래스를 상속해야 한다면 이 방법은 사용할 수 없다.
 + 열거타입이 다른 인터페이스를 구현하도록 선언할 수는 있다.
 
+<hr>
+
+##### ❗ TIP
++ 실무에서 enum으로 싱글턴 패턴을 적용하는 사례는 흔하지 않다.
+  + 내부 구성원들의 동의가 필요
+  + class로 통합하는 상황이 좋다면 구지 enum 사용이 불필요할 수도...
+<hr>
+
 
 ## 아이템4. 인스턴스화를 막으려거든 private 생성자를 사용하라.
 
@@ -279,8 +313,13 @@ public enum Elvis {
 + 인스턴스화 방지용이라는 주석을 달자
 + 하위 클래스에서 상위 클래스 생성자에 접근할 수 없게 된다.
 
+<hr>
 
-## 아이템5. 자원을 직접 명시하지 말고 의존 객체 주입을 사용하라.
+##### ❗ TIP
++ Util class 처럼 관용적으로 Instance화를 하지 않는 경우에도 인스턴스화를 방지해 Human error를 줄이자.
+<hr>
+
+## 아이템5. 자원을 직접 명시하지 말고 의존 객체 주입(DI)을 사용하라.
 
 ### 맞춤법 검사기에서 여러 사전을 사용할 수 있도록 하려면?
 + 사용하는 자원에 따라 동작이 달라지는 클래스에는 정적 유틸리티 클래스나 싱글턴 방식이 적합하지 않다.
@@ -299,6 +338,36 @@ public class SpellChecker {
 + But, 의존성이 매우 많은 경우에는 오히려 코드가 복잡해질 수 있다.
 + 의존 객체 프레임워크 (Spring, Dagger, Guice)
 
+<hr>
+
+##### ❗ TIP
++ @Configuration
+  + config 내부에 직접 정의해서 사용하는 것을 방지하자. 서버마다 다른 값이 필요할 수 있다.
+```java
+// 제로베이스 강의 예제
+// application.yml
+zerobase:
+  address: '서울시 강남구'
+
+@Configuration
+public class Config{
+  @Value("${zerobase.address}")
+  private String address;
+}
+```
+```java
+// 제로베이스 강의 예제2
+// 국내와 해외 전화번호의 패턴 차이가 다르기 때문에 패턴을 주입해서 사용
+public class PhonePatternChecker {
+  private final String pattern;
+  public PhonePatternChecker(String pattern){
+    this.pattern = pattern;
+  }
+  public boolean isVaild(String phone){...}
+}
+```
+
+<hr>
 
 ## 아이템6. 불필요한 객체 생성을 피하라.
 
@@ -321,6 +390,15 @@ public class SpellChecker {
 
 ### 방어적 복사에 실패하면 버그와 보안에 영향, 불필용한 객체 생성은 코드 형태와 성능에 영향을 준다.
 
+<hr>
+
+##### ❗ TIP
++ 항상 primitive type이 옳은 것은 아니다.
+  + int와 Integer
+  + 가격이 정해지지 않은 경우, null과 0이 가지는 경우가 상황에 따라 다르다.
++ 무심결에 Instance를 과도하게 생성하지 않았는지
++ primitive type과 boxing type을 의도하고 사용하는지
+<hr>
 
 ## 아이템7. 다 쓴 객체 참조를 해제하라
 
@@ -348,11 +426,17 @@ public Object pop(){
 ##### 3. 리스너 또는 콜백
 + weak reference 처리, WeakHashMap에 키로 저장
 
+<hr>
+
+##### ❗ TIP
++ Heap, Method Area
+  + 더 이상 사용되지 않아 참조를 가지고 있지 않다면 Unreachable Objects가 되어 GC 대상이 된다.
+<hr>
 
 ## 아이템8. finalizer와 cleaner 사용을 피하라.
 
 ### finalizer와 cleaner 사용의 문제점
-+ finalizer 사용자제하고 cleaner를 대안으로 제시했으나 여전히 자바 라이브러리에서 finalizer가 사용된다.
++ finalizer 사용자제하고 cleaner를 대안으로 제시했으나, 여전히 자바 라이브러리에서 finalizer가 사용된다.
 + cleaner 역시 예측할 수 없고, 느리고, 일반적으로 불필요하다.
 + 백그라운드에서 실행되며 둘 다 언제 실행될지 알 수 없다. JVM 알고리즘마다 차이가 발생
 + 상태를 영구적으로 수정하는 작업에서는 절대 의존해서는 안된다.
@@ -402,8 +486,10 @@ public class Room implements AutoCloseable {
 + cleaner는 안전망 역할이나 중요하지 않은 네이티브 자원 회수용으로만 사용하자. 
   + 이런 경우는 불확실성과 성능저하에 주의해야 한다.
 
+<hr>
 
-## 아이템9. Try-finally보다는 try-with-resource를 사용하라.
+
+## 아이템9. try-finally보다는 try-with-resource를 사용하라.
 
 ### 자바에는 close 메서드를 직접 호출해야만 하는 자원이 많다.
 
@@ -411,7 +497,7 @@ public class Room implements AutoCloseable {
 + 자원이 둘 이상인 경우 코드가 지저분해진다
 + 두 번째 예외적용으로 첫 번째 예외에 대한 정보를 남기지 않게 된다.
 
-### 꼭 회수해야 하는 자원을 다룰때는 try-with-resource를 사용하자
+### 꼭 회수해야 하는 자원을 다룰때는 try-with-resource를 사용하자!
 ```java
 static void copy(String src, String dst) throws IOException {
   try(InputStream in = new FileInputStream(src);
@@ -423,3 +509,35 @@ static void copy(String src, String dst) throws IOException {
   }
 }
 ```
+
+<hr>
+
+##### ❗ TIP
++ Cleaner with Try-with-resources
+```java
+// 제로베이스 강의 예제
+public class CleanObject implements AutoCloseable {
+  private static final Cleaner cleaner = Cleaner.create();
+  
+  private static class CleanData implements Runnable {
+    @Override
+    public void run(){
+      // clean()
+    }
+  }
+  
+  private final CleanData cleanData;
+  private final Cleaner.Cleanable cleanable;
+  
+  public CleanObject(){
+    this.cleanData = new CleanData();
+    this.cleanable = cleaner.register(this, cleanData);
+  }
+  
+  @Override
+  public void close(){
+    cleanable.clean();
+  }
+}
+```
+<hr>
