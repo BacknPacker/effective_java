@@ -215,5 +215,58 @@ Private NyPizza(Builder builder) {
 + 빌더 생성시 매개변수가 4개 이상은 되야 값어치를 한다.
 + API는 시간이 지날수록 매개변수가 많아짐을 고려해야 한다.
 
-### 빌더는 점층적 생성자보다 클라이언트 코드를 읽고 쓰기가 훨씬 간결하고, 자바빈즈보다 안전하다.
+##### ❗ 빌더는 점층적 생성자보다 클라이언트 코드를 읽고 쓰기가 훨씬 간결하고, 자바빈즈보다 안전하다.
+
+
+## 아이템3. Private 생성자나 열거 타입으로 싱글턴임을 보증하라.
+
+### 싱글턴
++ 인스턴스를 오직 하나만 생성할 수 있는 클래스
++ 함수와 같은 무상태 객체나 설계상 유일해야 하는 시스템 컴포넌트
++ 싱글턴 패턴은 클라이언트 테스트의 한계를 갖는다.
+
+### 1. public static final 필드 방식
+```
+public class Elvis {
+	public static final Elvis INSTANCE = new Elvis();
+	private Elvis(){…}
+	public void leaveTheBuilding(){…}
+}
+```
++ private 생성자는 처음 Elvis.INSTANCE 초기 생성시에만 처음 호출된다.
++ 권한 있는 클라이언트의 AccesibleObject.setAccessible private 생성자 호출 우려
+  + 두 번째 객체 생성 전 예외처리
+
+### 2. public static 멤버 방식
+```
+public class Elvis {
+	private static final Elvis INSTANCE = new Elvis();
+	private Elvis();
+	public static Elvis getInstance(){ return INSTANCE; }
+	public void leaveTheBuilding(){…}
+	private Object readResolve(){
+		return INSTANCE;
+	}
+}
+```
+##### 이렇게 싱글턴 생성시 장점
++ 싱글턴을 변경하고자 하는 경우 호출하는 인스턴스 변경이 되므로 수정시 편리
++ 정적 팩터리를 제네릭 싱글턴 팩터리로 만들 수 있다
++ 정적 팩터리의 메서드 참조를 공급자로 사용할 수 있다.
+
+### 싱글턴의 직렬화
++ 모든 인스턴스를 일시적이라고 선언하고 readResolve 메서드를 제공해야 한다.
++ 이렇게 하지 않으면. 직렬화된 인스턴스를 역직렬화할 때마다 인스턴스가 새로 생성됨
+
+### 열거타입의 싱글턴
+```
+public enum Elvis {
+	INSTANCE;
+	Public void leaveTheBuildings(){…}
+}
+```
++ 대부분의 상황에서 원소가 하나뿐인 열거타입이 싱글턴을 만드는 가장 좋은 방법이다.
++ 단 만드려는 싱글턴이 enum 이외의 다른 클래스를 상속해야 한다면 이 방법은 사용할 수 없다.
++ 열거타입이 다른 인터페이스를 구현하도록 선언할 수는 있다.
+
 
