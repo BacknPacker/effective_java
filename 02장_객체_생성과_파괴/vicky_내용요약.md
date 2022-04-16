@@ -226,11 +226,11 @@ Private NyPizza(Builder builder) {
 + 싱글턴 패턴은 클라이언트 테스트의 한계를 갖는다.
 
 ### 1. public static final 필드 방식
-```
+```java
 public class Elvis {
-	public static final Elvis INSTANCE = new Elvis();
-	private Elvis(){…}
-	public void leaveTheBuilding(){…}
+  public static final Elvis INSTANCE = new Elvis();
+  private Elvis(){…}
+  public void leaveTheBuilding(){…}
 }
 ```
 + private 생성자는 처음 Elvis.INSTANCE 초기 생성시에만 처음 호출된다.
@@ -238,15 +238,15 @@ public class Elvis {
   + 두 번째 객체 생성 전 예외처리
 
 ### 2. public static 멤버 방식
-```
+```java
 public class Elvis {
-	private static final Elvis INSTANCE = new Elvis();
-	private Elvis();
-	public static Elvis getInstance(){ return INSTANCE; }
-	public void leaveTheBuilding(){…}
-	private Object readResolve(){
-		return INSTANCE;
-	}
+  private static final Elvis INSTANCE = new Elvis();
+  private Elvis();
+  public static Elvis getInstance(){ return INSTANCE; }
+  public void leaveTheBuilding(){…}
+  private Object readResolve(){
+      return INSTANCE;
+  }
 }
 ```
 ##### 이렇게 싱글턴 생성시 장점
@@ -259,10 +259,10 @@ public class Elvis {
 + 이렇게 하지 않으면. 직렬화된 인스턴스를 역직렬화할 때마다 인스턴스가 새로 생성됨
 
 ### 열거타입의 싱글턴
-```
+```java
 public enum Elvis {
-	INSTANCE;
-	Public void leaveTheBuildings(){…}
+  INSTANCE;
+  public void leaveTheBuildings(){…}
 }
 ```
 + 대부분의 상황에서 원소가 하나뿐인 열거타입이 싱글턴을 만드는 가장 좋은 방법이다.
@@ -279,4 +279,23 @@ public enum Elvis {
 + 인스턴스화 방지용이라는 주석을 달자
 + 하위 클래스에서 상위 클래스 생성자에 접근할 수 없게 된다.
 
+
+## 아이템5. 자원을 직접 명시하지 말고 의존 객체 주입을 사용하라.
+
+### 맞춤법 검사기에서 여러 사전을 사용할 수 있도록 하려면?
++ 사용하는 자원에 따라 동작이 달라지는 클래스에는 정적 유틸리티 클래스나 싱글턴 방식이 적합하지 않다.
+```java
+public class SpellChecker {
+  Private final Lexicon dictionary;
+  Public SpellChecker(Lexion dictionary){
+  this.dictionary = Objects.requiredNonNull(dictionary);
+  }
+  public Boolean isValid(String word){}
+  public List<String> suggestions(Strinf typo){}
+}
+```
++ 불변을 보장, 생성자, 정적 팩터리, 빌더 모두 응용 가능하다
++ 팩터리 메서드의 구현
++ But, 의존성이 매우 많은 경우에는 오히려 코드가 복잡해질 수 있다.
++ 의존 객체 프레임워크 (Spring, Dagger, Guice)
 
