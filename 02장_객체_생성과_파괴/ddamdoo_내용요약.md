@@ -1113,3 +1113,72 @@ cleaner의 명세를 보면 System.exit을 호출할 때의 cleaner의 동작은
 
 
 
+---
+
+
+
+## Item 9. try-finally보다는 try-with-resource를 사용하라.
+
+자바에서는 close() 메소드를 직접 호출해서 닫아줘야 하는 자원들이 많다. 이를 제대로 해주지 않으면 성능 문제로 이어질 수 있다. 보통은 자원이 제대로 닫힘을 보장하는 수단으로 `try-finally` 구문을 많이 사용했는데, 자원을 여러 개 사용하게 되는 경우에 하나의 예외 때문에 다른 예외 정보를 찾을 수 없게 되는 문제가 생길 수 있다.
+
+이러한 문제를 해결하기 위해 자바 7버전에서는 `try-with-resources`구문을 만들었다. 이는 `AutoCloseable 인터페이스`를 구현해야 하고 예시는 아래와 같다.
+
+* try-finally 구문을 사용한 예시
+
+```java
+static String firstLineOfFile(String path) throws IOException {
+	BufferedReader br = new BufferedReader(new FileReader(path));
+	try {
+		return br.readLine();
+	} finally {
+		br.close();
+	}
+}
+```
+
+```java
+static void copy(String src, String dst) throws IOException {
+	InputStream in = new FileInputStream(src);
+	try {
+		OutputStream out = new FileOutputStream(dst);
+		try {
+			byte[] buf = new byte[BUFFER_SIZE];
+			int n;
+			while ((n = in.read(buf)) >= 0)
+				out.write(buf, 0, n);
+		} finally {
+			out.close();
+	} finally {
+		in.close();
+	}
+}
+```
+
+* try-with-resources를 이용한 예시
+
+```java
+static String firstLineOfFile(String path) throws Exception {
+	try (BufferedReader br = new BufferedReader (
+		new FileReader(path))) {
+			return br.readLine();
+	}
+}
+```
+
+```java
+static void copy(String src, String det) throws IOException {
+	try (InputStream in = new FileInputStream(src);
+		OutputStream out = new FileOutputStream(dst)) {
+		byte[] buf = new byte[BUFFER_SIZE];
+		int n;
+		while ((n == in.read(buf)) > = 0)
+			out.write(buf, 0, n);
+}
+```
+
+
+
+`try-with-resources `구문이 `try-finally`구문에 비해 **짧고**, **가독성이 좋으며**, **문제 진단에 있어 훨씬 좋다**.
+
+또한 자원이 여러 개 있는 경우 스택 추적 내역에 숨겨져있다가 출력되기 때문에 숨겨지는 예외 없이 진단이 가능하고, `Throwable`에 `getSuppressed `메소드를 통해 프로그램 코드에서 가져올 수 있다.
+
