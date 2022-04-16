@@ -347,3 +347,57 @@ public Object pop(){
 
 ##### 3. 리스너 또는 콜백
 + weak reference 처리, WeakHashMap에 키로 저장
+
+
+## 아이템8. finalizer와 cleaner 사용을 피하라.
+
+### finalizer와 cleaner 사용의 문제점
++ finalizer 사용자제하고 cleaner를 대안으로 제시했으나 여전히 자바 라이브러리에서 finalizer가 사용된다.
++ cleaner 역시 예측할 수 없고, 느리고, 일반적으로 불필요하다.
++ 백그라운드에서 실행되며 둘 다 언제 실행될지 알 수 없다. JVM 알고리즘마다 차이가 발생
++ 상태를 영구적으로 수정하는 작업에서는 절대 의존해서는 안된다.
++ 동작 중 발생한 예외는 처리할 작업이 있더라도 그 순간 종료되거나 훼손된 객체를 사용하는 다른 스레드가 발생하는 문제가 발생할 수 있다.
++ 심각한 성능문제
++ 심각한 보안문제
+  + 생성자나 직렬화 과정에서 예외가 발생하면, 생성되다 만 객체에서 악의적인 하위 클래스의 finalize가 수행될 수 있게 된다.,
+
+### 대체방안 - AutoCloseable 구현
++ 객체를 다 사용했다면 close()를 호출하고, 이후에 객체가 불리는 경우 IllegalStateException을 던짐
+
+### finalizer와 cleaner 사용하기
++ 안전망 역할, 클라이언트가 하지 않은 자원회수용
++ FileInputStream, FileOutputStream, ThreadPoolExecutor
++ 네이티브 피어와 연결된 객체
+  + 일반 자바 객체가 네이티브 메서드를 통해 기능을 위임한 네이티브 객체
+  + 성능저하를 감당할 수 있고, 심각한 자원을 가지고 있지 않는 경우만
++ cleaner는 public API에 나타나지 않는다
+```java
+public class Room implements AutoCloseable {
+  private static final Cleaner cleaner = Cleaner.create();
+  private static class State implements Runnable {
+      int numJunkPiles;
+      State(int numJunkPiles){
+        this.numJunkPiles = numJunkPiles;
+      }
+    
+    @Override public void run(){
+      System.out.println(“방청소”);
+      numJunkPiles = 0;
+    }
+  }
+
+  private final State state;
+  private final Cleaner.Cleanable cleanable;
+  
+  public Room(int numJunkPiles){
+    State = new State(numJunkPiles);
+    Cleanable = cleaner.register(this, state);
+  }
+  
+  @Override public void close(){
+      Cleanable.clean();
+  }
+}
+```
++ cleaner는 안전망 역할이나 중요하지 않은 네이티브 자원 회수용으로만 사용하자. 
+  + 이런 경우는 불확실성과 성능저하에 주의해야 한다.
