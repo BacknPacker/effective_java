@@ -303,7 +303,8 @@ void notClean() throws Exception {
     System.out.println("제발 청소 좀 해");
 }
 ```
-![image](https://user-images.githubusercontent.com/53300830/163536949-d3d88d40-4efc-483d-8621-199d630fcfad.png)
+![image](https://user-images.githubusercontent.com/53300830/163539608-7a9012b9-1d22-4709-950b-4758c868f572.png)
+
 
 #### ✅ 변경 후 코드
 ```java
@@ -318,7 +319,7 @@ void autoClean() throws Exception {
     }
 }
 ```
-![image](https://user-images.githubusercontent.com/53300830/163539608-7a9012b9-1d22-4709-950b-4758c868f572.png)
+![image](https://user-images.githubusercontent.com/53300830/163536949-d3d88d40-4efc-483d-8621-199d630fcfad.png)
 
 #### 📋 코드리뷰 정리
 - try-finally로 바꾸자 정상적으로 호출하는 모습을 볼 수 있다.
