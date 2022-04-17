@@ -23,8 +23,8 @@ class Member {
 #### 2️⃣ 호출될 때마다 인스턴스를 새로 생성하지는 않아도 된다.
 ```java
 public static Boolean valueOf(boolean bololean){
-        return b Boolean.TRUE : Boolean.FALSE;
-        }
+    return b Boolean.TRUE : Boolean.FALSE;
+}
 ```
 + 인스턴스를 미리 만들어 놓거나 새로 생성한 인스턴스를 캐싱하여 재활용하는식으로 불필요한 객체 생성을 피할 수 있다.
 #### 3️⃣ 반환 타입의 하위 타입 객체를 반환할 수 있는 능력이 있다.
