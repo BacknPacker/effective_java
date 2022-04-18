@@ -1181,4 +1181,3 @@ static void copy(String src, String det) throws IOException {
 `try-with-resources `구문이 `try-finally`구문에 비해 **짧고**, **가독성이 좋으며**, **문제 진단에 있어 훨씬 좋다**.
 
 또한 자원이 여러 개 있는 경우 스택 추적 내역에 숨겨져있다가 출력되기 때문에 숨겨지는 예외 없이 진단이 가능하고, `Throwable`에 `getSuppressed `메소드를 통해 프로그램 코드에서 가져올 수 있다.
-
