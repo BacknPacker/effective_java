@@ -242,3 +242,136 @@ public class ColorPointFromComposition {
 4. ##### 입력 객체와 자기 자신의 대응되는 핵심필드들이 모두 일치하는지 하나씩 검사
 
 5. ##### equals를 재정의할 땐 hashCode도 반드시 재정의
+
+
+
+---
+
+
+
+## Item 11. equals를 재정의 하려거든 hashCode도 재정의하라
+
+##### equals : 두 객체의 내용이 같은지, 동등성(equality)를 비교하는 메서드
+
+##### hashCode : 두 객체가 같은 객체인지, 동일성(identity)를 비교하는 메서드
+
+
+
+#### Object 명세에서 발췌한 HashCode 규약
+
+1. 애플리케이션이 유지되는 동안 equals비교에 사용되는 정보가 변경되지 않았다면, 몇 번을 호출하더라도 일관된 값을 반환해야 한다.
+2. equals(Object)가 동일하다고 판단되면 두 객체의 hashCode는 동일한 값을 반환해야 한다.
+3. equals(Object)가 동일하지 않다고 판단하더라도 hashCode가 서로 다른 값을 반환할 필요는 없다.  하지만, 다른 값을 반환해야 해시테이블의 성능이 좋아진다.
+
+
+
+```java
+public static void main(String[] args) {
+	Map<PhoneNumber, String> m = new HashMap<>();
+	m.put(new PhoneNumber(707, 867, 5309), "Jenny");
+
+	System.out.println(m.get(new PhoneNumber(707, 867, 5309)));
+}
+```
+
+책에 나온 예시 사례이다. 이 코드는 Jenny라는 값이 반환될거라는 기대가 있지만 실제로는 `null`이 반환된다. 여기서 HashMap에 Jenny를 넣을 때와 이것을 꺼내려할 때 총 2번의 PhoneNumber 인스턴스가 사용되었기 때문이다. 이러한 문제를 해결하려면 PhoneNumber에 대해서 적절한 hashCode를 작성해주면 해결이 가능하다.
+
+
+
+##### 사용해서는 안되는 방법
+
+```java
+@Override public int hashCode() { 
+    return 42; 
+}
+```
+
+위 코드대로 사용하게 되면 모든 객체가 해시테이블의 버킷 하나에 담겨 LinkedList 처럼 동작하게 된다. 그렇게 되면 평균 수행 시간이 O(1)인 해시테이블의 성능이 O(n)으로 느려져서 객체가 많아지면 쓸 수 없게 된다.
+
+좋은 해시 함수라면 세번 째 규약에서 말하듯이 서로 다른 인스턴스에 다른 해시코드를 반환해야 한다. 
+
+
+
+#### 좋은 hashCode 를 작성하는 간단한 요령
+
+1. int 변수 reult 를 선언 한 후 값 c로 초기화 한다. (이때 c는 해당 객체의 첫번째 핵심 필드를 2.a단계 방식으로 계산한 hashCode)
+
+2. 해당 객체의 나머지 핵심필드 f 각각에 대해 다음 작업을 수행
+
+   a. 해당 필드의 해시코드 c를 계산
+
+   1. 기본 타입 필드라면, Type.hashCode(f)를 수행
+   2. 참조 타입 필드면서 이 클래스의 equals 메서드가 이 필드의 equals를 재귀적으로 호출해 비교한다면, 이 필드의 hashCode 를 재귀적으로 호출
+      * 계산이 더 복잡해질 것 같으면, 이 필드의 표준형을 만들어 그 표준형의 hashCode를 호출하고, 이 때  필드의 값이 null이면 일반적으로 0을 사용
+   3. 필드가 배열이라면, 핵심 원소 각각을 별도 필드처럼 다룬다. 이상의 규칙을 재귀적으로 적용해 각 핵심 원소의 해시코드를 계산한 다음, 2.b단계 방식으로 갱신한다. 배열에 핵심 원소가 하나도 없다면 단순히 상수(0을 추천)를 사용한다. 모든 원소가 핵심 원소라면 Arrays.hashCode를 사용한다.
+
+   b. 2.a 단계에서 계산한 해시코드 c 로 result 를 갱신한다.
+
+   $result = 31 * result + c;$
+
+3. result 를 반환
+
+
+
+##### ※ 위에 해쉬코드를 작성하는 요령에서 31이라는 숫자가 무심코 나왔는데 이는 31이  홀수이면서 소수이기 때문이다.
+
+- 곱할 숫자가 짝수고 오버플로가 발생하면 정보를 잃게되기 때문
+  - 2를 곱하면 시프트 연산과 같은 결과를 줌
+- 소수를 곱하는 것은 전통적으로 나머지 연산에서 충돌을 줄이기 위한 방법으로 주로 사용되는 방식이다.
+- 31을 곱하는 것은 시프트 연산과 뺄셈으로 대체해 최적화 할 수 있다.
+  - $31*i$와 $(i<<5)-i$는 같은 뜻으로 사용된다.
+
+
+
+```java
+@Override public int hashCode() {
+	int result = Short.hashCode(areaCode);
+	result = 31 * result + Short.hashCode(prefix);
+	result = 31 * result + Short.hashCode(lineNum);
+	return result;
+}
+
+public static void main(String[] args) {
+	Map<PhoneNumber, String> m = new HashMap<>();
+	m.put(new PhoneNumber(707, 867, 5309), "Jenny");
+
+	System.out.println(m.get(new PhoneNumber(707, 867, 5309)));
+}
+```
+
+
+
+추가적으로 해시 충돌이 더욱 적은 방법을 사용하기 위해서는 `com.google.common.hash.Hashing`을 참고하면 된다.
+
+>https://guava.dev/releases/21.0/api/docs/com/google/common/hash/Hashing.html
+
+
+
+Object 클래스는 `hash` 라는 임의의 개수만큼 객체를 받아 해시코드로 계산해주는 메소드를 제공한다.
+
+* 입력 인수를 담기 위한 배열을 만들고, 박싱/언박싱을 거쳐야 하기 때문에 속도는 조금 느리다.
+
+
+
+클래스가 불변이고 hashCode를 계산하는 비용이 크다면 `캐싱` 고려하는 것이 좋다. 클래스의 객체가 주로 해시의 키로 사용된다면 인스턴스가 생성될 때 해시코드 계산해야 한다. 해시 키로 사용되지 않으면 hashCode가 처음 불릴 때 계산하는 전략을 사용한다.(지연초기화 전략)
+
+
+
+```java
+private int hashCode;
+
+@Override public int hashCode() {
+	int result = hashCode;
+	if(result == 0){
+		result = Short.hashCode(areaCode);
+		result = 31 * result + Short.hashCode(prefix);
+		result = 31 * result + Short.hashCode(lineNum);
+		hashCode = result;
+	}
+	return result;
+}
+```
+
+시스템의 성능을 높이기 위해서 해시코드 계산시에 핵심 필드를 생략하면 안된다. 이는 속도가 빨라질 수도 있지만 해시의 품질을 떨어뜨려 더 심각한 성능 문제를 만들 수 있다.
+
+또한 hashCode가 반환하는 값의 생성 규칙에 대해서 API 사용자에게 자세히 알리지 않아야 추후 결함이나 기능개선을 위해 계산 방식을 바꿀 일이 생길 때 수정이 가능하다.
