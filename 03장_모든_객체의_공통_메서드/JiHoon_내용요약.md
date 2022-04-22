@@ -1,0 +1,292 @@
+# 3장 모든 객체의 공통 메서드
+모든 객체의 조상은 Object 클래스이다.  
+Object에서 final이 아닌 메서드는 모두 재정의(overriding)를 염두에 두고 설계됐다.  
+하지만 재정의를 일반 규약에 맞지 않게 구현하면 의도와 다르게 동작할 수 있다.
+
+> 우리는 이런 메서드들을 언제 어떻게 재정의해야 하는지를 알아야한다.
+
+## 아이템 10. equals는 일반 규약을 지켜 재정의하라.
+> equals는 재정의하기 쉬워 보이지만 곳곳에 함정이 있다.  
+> 이런 함정을 피하는 가장 쉬운길은 아예 재정의하지 않는다.
+
+### ✅ equals를 재정의 하면 안되는 경우.
+#### 1. 각 인스턴스가 본질적으로 고유할 때
+- 값이 아닌 동작하는 개체 인스턴스는 동일한 인스턴스가 존재하지 없기에 Object의 equals로 충분하다.  
+- 예) Tread
+
+#### 2. 인스턴스의 논리적 동치성(ogical equality)를 검사할 일이 없을 때
+- 값을 비교해서 동등한지 비교할 일이 없다 == 논리적 동치성 검사 할 일이 없다.
+- 기본적인 Object의 equals로 충분하다.
+
+#### 3. 상위 클래스에서 재정의한 equals가 하위 클래스에도 들어맞을 때
+- 상위에서 구현한 equals로직으로 사용하면 된다.
+- 예) `Set` 구현체는 `AbstractSet`이 구현한 equals를 상속받아 쓴다.
+
+#### 4. 클래스가 priviate이거나 package-private이고 equals 메서드를 호출할 일이 없다.
+
+```java
+// equals가 실수로라도 호출되는 걸 막고싶다면 아래와같이 재정의해주면 된다.
+@Override public boolean equals(Object o) {
+  throw new AssertionError(); // 호출 금지!
+}
+```
+
+<hr/>
+
+### ✅ equals 재정의 규약
+> equals는 동치관계(equivalence relation)를 구현하며, 아래를 만족해야합니다.
+> 모두 null 아닌 참조값이라는 전제하에 작성하겠습니다.
+
+#### 1. 반사성(reflextivity)
+  - x에 대해 x.equals(x)는 true다.
+#### 2. 대칭성(symmetry)
+  - x, y에 대해, x.equals(y)가 true면 y.equals(x)도 true다.  
+
+    **2-1. 대칭성 위반 예시**
+    ```java
+    private final String s;
+
+    public CaseInsensitiveString(String s) {
+        this.s = Objects.requireNonNull(s);
+    }
+
+    // 대칭성 위배 코드
+    @Override
+    public boolean equals(Object o) {
+        if (o instanceof CaseInsensitiveString) {
+            return s.equalsIgnoreCase(
+                    ((CaseInsensitiveString) o).s);
+        }
+        if(o instanceof String) { // String과의 비교 연산 시도 한 방향 작동
+            // equalsIgnoreCase => 대소문자 구분 안함
+            return s.equalsIgnoreCase((String) o);
+        }
+        return false;
+    }
+    ```
+    **2-1. 테스트 코드**
+    ```java
+    private static CaseInsensitiveString cis;
+    private static String s;
+
+    @BeforeEach
+    void beforeEach() {
+        cis = new CaseInsensitiveString("Polish");
+        s = "polish";
+    }
+
+    @Test
+    @DisplayName("대칭성 위배 테스트 String <-> CaseInsensitiveString")
+    void 대칭성_위배_테스트_String_CaseInsensitiveString() {
+        Assertions.assertEquals(cis.equals(s), s.equals(cis)); // 개선 후 true 반환
+        // CaseInsensitiveString의 equals는 잘 작동한다.
+        // 하지만 String의 equals는 CaseInsensitiveString의 존재를 알지 못하기 때문에 false가 반환이 된다.
+    }
+    ```
+    ![image](https://user-images.githubusercontent.com/53300830/163711314-4f1bca4c-b22b-4ea9-9f8e-6e24a781cb49.png)
+
+    **2-2. 해결 코드**
+    ```java
+    //대칭성을 만족하게 수정
+    public boolean equals(Object o) {
+        return o instanceof CaseInsensitiveString &&
+                ((CaseInsensitiveString) o).s.equalsIgnoreCase(s);
+    }
+    ```
+    **2-3. 테스트 코드(2-1 테스트 코드와 동일)**
+
+    ![image](https://user-images.githubusercontent.com/53300830/163711463-b03941b7-3a9a-4181-8bea-879a95b57c57.png)
+
+#### 3. 추이성(transitivity)
+  - null이 아닌 모든 참조 값은 aRb이고 bRc이면 aRc이다.
+
+    **3-1. 대칭성 위반**
+    ```java
+    public class Point {
+      private final int x;
+      private final int y;
+
+      public Point(int x, int y) {
+          this.x = x;
+          this.y = y;
+      }
+
+      @Override
+      public boolean equals(Object o) {
+          if (!(o instanceof Point))
+              return false;
+          Point p = (Point)o;
+          return p.x == x && p.y == y; // 색상을 무시한다.
+      }
+    }
+    ```
+    ```java
+    public class ColorPoint extends Point {
+
+        private Color color;
+
+        public ColorPoint(int x, int y, Color color) {
+            super(x, y);
+            this.color = color;
+        }
+
+        // 대칭성 위반
+        @Override public boolean equals(Object o){
+            if(!(o instanceof ColorPoint))
+                return false;
+            return super.equals(o) && ((ColorPoint) o).color == color;
+        }
+    }
+    ```
+    
+    **3-1. 테스트 코드**
+    ```java
+    
+    private static ColorPoint p1, p3;
+    private static Point p2;
+
+    @BeforeEach
+    void Point_ColorPoint_추가() {
+        p1 = new ColorPoint(1, 2, Color.RED);
+        p2 = new Point(1, 2);
+        p3 = new ColorPoint(1, 2, Color.BLUE);
+    }
+    
+    @Test
+    @DisplayName("대칭성 위배 문제")
+    void 대칭성_위배_문제() {
+        // aRb 이면 bRa이다.
+
+        // p1~ : ColorPoint equals (color 필드에서 false)
+        // p2~ : Point equals (color 를 무시하고 ture 반환)
+        assertEquals(p1.equals(p2), p2.equals(p1));
+    }
+    ```
+    ![image](https://user-images.githubusercontent.com/53300830/163712213-1fdd998b-a330-42a7-9ab9-c6414fcb0dbd.png)
+
+    **3-2. 대칭성 위반 해결 But 추이성을 위반**
+    ```java
+    // 추이성 위배
+    @Override
+    public boolean equals(Object o){
+        if(!(o instanceof Point))
+            return false;
+        // o가 일반 Point면 색상을 무시하고 비교하게 된다.
+        if(!(o instanceof ColorPoint))
+            return o.equals(this);
+        // o가 ColorPoint면 색상까지 비교하게 된다.
+        return super.equals(o) && ((ColorPoint) o).color == color;
+    }
+    ```
+    
+    **3-2. 테스트 코드**
+    ```java
+    @Test
+    @DisplayName("추이성 위배 문제")
+    void 추이성_위배_문제() {
+        // aRb 이고 bRc 이면 aRc을 만족한다.
+        assertAll(
+            // aRb
+            () -> assertFalse(p1.equals(p2)), // 1. ColorPoint equals  예상 값 : false // 결과 값 : true
+            // bRc
+            () -> assertFalse(p2.equals(p3)), // 1. Point equals 예상 값 : false // 결과 값 : true
+            // aRc
+            () -> assertFalse(p1.equals(p3)) //  1. ColorPoint equals 예상 값 : false // 결과 값 : false
+        );
+    }
+    ```
+    ![image](https://user-images.githubusercontent.com/53300830/163712296-c9f9929c-ae54-4988-ae5e-bd39b7ab92a3.png)
+    
+    3-3. 무한 재귀에 빠질 수 있다. [코드 참고 자바봄 블로그](https://javabom.tistory.com/2)
+    > 이처럼 구체 클래스를 확장해 새로운 값을 추가하면서 equals 규약을 만족시킬 방법은 존재하지 않는다.
+
+    3-4. instanceOf를 getClass로 바꿔보자.
+    ```java
+    @Override 
+    public boolean equals(Object o){
+      if(o == null || o.getClass() != getClass())
+          return false;
+      Point p = (Point) o;
+      return p.x == x && p.y == y;
+    }
+    ```
+    > Point의 하위클래스는 정의상 여전히 Point이기 때문에 어디서든 Point로 활용 될 수 있어야한다.  
+    > 즉 리스코프 원칙을 규배하게 된다. (59페이지 참고)
+
+    <details>
+    <summary>리스코프 원칙</summary>
+    <div markdown="1">
+      
+      **리스코프 치환원칙 (Liskov substitution principle)**
+      
+        어떤 타입에 있어 중요한 속성이라면 그 하위 타입에서도 마찬가지로 중요하다.   
+        그러므로 모든 메서드가 하위 타입에서도 똑같이 잘 작동해야 한다.
+      
+    </div>
+    </details>
+    
+    <hr/>
+    
+    ### 📋 해결 방법
+    #### 상속대신 컴포지션을 사용해보자.
+     ```java
+     public class ColorPoint {
+         private final Point point;
+         private final Color color;
+
+         public ColorPoint(int x, int y, Color color) {
+             point = new Point(x, y);
+             this.color = Objects.requireNonNull(color);
+         }
+
+         // 이 ColorPoint의 Point 뷰를 반환한다.
+         public Point asPoint() {
+             return point;
+         }
+
+         @Override
+         public boolean equals(Object o) {
+             if (!(o instanceof ColorPoint)) return false;
+
+             ColorPoint cp = (ColorPoint) o;
+             return cp.point.equals(point) && cp.color.equals(color);
+         }
+     }
+     ```
+      ![image](https://user-images.githubusercontent.com/53300830/163713558-db59e89f-bf00-4184-b919-0469e34d37a8.png)
+
+    
+#### 4. 일관성(constistency)
+  - x.equals(y)를 반복해서 호출하면 항상 true를 반환하거나 항상 false를 반환한다.
+  - 즉 두 객체가 같다면 **앞으로도 영원히 같아야 한다는 뜻**이다. (수정이 없다는 가정하에)
+  - 특히 `불변 클래스`는 equals의 결과는 항상 동일해야 한다.
+
+    #### 4-1. equals의 판단에 신뢰할 수 없는 자원이 꺼어들게 해서는 안된다.  
+    >java.net.URL 여기서 equals는 URL과 매핑된 호스트 IP주소를 이용해 비교하게 되면,  
+    >호스트 이름을 IP주소로 바꾸러면 네트워크를 통하게 되고 그렇게 되면 결과는 항상 달라진다.
+
+    #### 4-2. equals를 항시 메모리에 존재하는 객체만을 사용한 결정적 계산만 수행하게 한다.
+  
+  
+#### 5. null-아님
+  - x.equals(null)은 false다.
+
+  #### 양질의 equals를 구현하는 4단계 
+    5-1. == 
+
+
+
+```java
+
+```
+
+## 아이템 11. equals를 재정의하려거든 hashCode도 재정의하라.
+
+
+## 아이템 12. toString을 항상 재정의하라.
+
+## 아이템 13. clone 재정의는 주의하여 진행하라.
+
+## 아이템 14. Comparable를 구현할지 고려하라.
+
+
