@@ -189,7 +189,7 @@ public class ColorPoint extends Point {
 
 redPoint와 point와의 비교에서, 그리고 point와 bluePoint와의 비교는 색상을 무시했지만, redPoint와 bluePoint와의 비교에서는 색상을 고려했기 때문에 추이성이 깨진 것을 알 수 있다. 이러한 문제는 무한재귀에 빠질 수 있기에 조심해야 한다. 
 
-추이성에 위배되는 문제를 지키기 위한 대안은 상속 대신 **컴포지션을 사용**하는 것이 있다. Point를 상속하는 대신 Point 객체를 필드로 만든 뒤 Point 뷰 메서드를 만드는 방법이다. 코드는 아래와 같다.
+추이성에 위배되는 문제를 지키기 위한 대안은 상속 대신 **컴포지션을 사용**하는 것이 있다. Point를 상속하는 대신 Point 객체를 필드로 만든 뒤 Point 뷰 메소드를 만드는 방법이다. 코드는 아래와 같다.
 
 ```java
 public class ColorPointFromComposition {
@@ -251,9 +251,9 @@ public class ColorPointFromComposition {
 
 ## Item 11. equals를 재정의 하려거든 hashCode도 재정의하라
 
-##### equals : 두 객체의 내용이 같은지, 동등성(equality)를 비교하는 메서드
+##### equals : 두 객체의 내용이 같은지, 동등성(equality)를 비교하는 메소드
 
-##### hashCode : 두 객체가 같은 객체인지, 동일성(identity)를 비교하는 메서드
+##### hashCode : 두 객체가 같은 객체인지, 동일성(identity)를 비교하는 메소드
 
 
 
@@ -301,7 +301,7 @@ public static void main(String[] args) {
    a. 해당 필드의 해시코드 c를 계산
 
    1. 기본 타입 필드라면, Type.hashCode(f)를 수행
-   2. 참조 타입 필드면서 이 클래스의 equals 메서드가 이 필드의 equals를 재귀적으로 호출해 비교한다면, 이 필드의 hashCode 를 재귀적으로 호출
+   2. 참조 타입 필드면서 이 클래스의 equals 메소드가 이 필드의 equals를 재귀적으로 호출해 비교한다면, 이 필드의 hashCode 를 재귀적으로 호출
       * 계산이 더 복잡해질 것 같으면, 이 필드의 표준형을 만들어 그 표준형의 hashCode를 호출하고, 이 때  필드의 값이 null이면 일반적으로 0을 사용
    3. 필드가 배열이라면, 핵심 원소 각각을 별도 필드처럼 다룬다. 이상의 규칙을 재귀적으로 적용해 각 핵심 원소의 해시코드를 계산한 다음, 2.b단계 방식으로 갱신한다. 배열에 핵심 원소가 하나도 없다면 단순히 상수(0을 추천)를 사용한다. 모든 원소가 핵심 원소라면 Arrays.hashCode를 사용한다.
 
@@ -430,3 +430,191 @@ toString 반환값 문서화을 문서화할 때는 의도를 명확히 밝혀�
 toString을 항상 재정의해야 하는 것은 아니다. 정적 유틸리티 클래스는 toString을 제공할 이유가 없고, 대부분의 열거 타입도 자바가 이미 완벽한 toString을 제공하니 따로 재정의 할 필요가 없다. 하지만 하위 클래스들이 공유해야 할 문자열 표현이 있는 추상 클래스라면 toString을 재정의해줘야 한다.
 
 각 클래스가 가진 데이터에 따라 자동 생성 toString이 적합할 수도 있고 그렇지 않을 수도 있지만 객체의 값에 관해 알려주지 않는 Object의 toString 보다는 자동 생성된 toString이 훨씬 유용하기 때문에 재정의 하는 편이 좋다.
+
+
+
+---
+
+
+
+## Item 13. clone 재정의는 주의해서 진행하라
+
+##### Cloneable
+
+* 복제해도 되는 클래스임을 명시하는 믹스인 인터페이스(mixin interface)
+
+객체를 복사하고싶다면 Cloneable 인터페이스를 구현해 clone 메소드를 재정의하는 방법이 일반적이지만, clone 메소드는 Cloneable이 아니라 Object에 선언되어 있고, protected 접근제어자로 되어 있어 같은 패키지가 아니면 접근할 수 없다. 따라서 Cloneable 인터페이스를 구현하는 것 만으로는 clone 메소드 호출이 안된다. 
+
+
+
+#### Cloneable의 역할
+
+Object 클래스의 protected로 선언되어있는 clone 메소드의 동작 방식을 결정한다. clone을 호출하면 객체의 필드들을 복사한 객체를 반환한다.
+
+* Cloneable을 구현하지 않은 클래스에서 clone을 호출하면 `CloneNotSupportedException`이 발생한다.
+
+
+
+#### clone 메소드의 일반 규약
+
+```java
+1. x.clone() != x //True
+2. x.clone().getClass() == x.getClass() //True
+3. x.clone.equals(x) //True
+4. x.clone().getClass() == x.getClass()
+```
+
+1.에서 보듯이 복사본이 원본과 일치하지 않지만 2. 클래스 인스턴스는 같은 타입이고, 그 밑에 있는 3. 수식도 참이지만 필수는 아니다.
+
+clone() 메소드의 반환값이 복사될 객체를 가르키기에 강제성이 빠진 `생성자 연쇄(constructor chaining)`와 유사한데 clone 내부 로직이 생성자를 호출해 얻은 인스턴스를 반환해도 문제가 없다는 것을 뜻한다. 하지만 이렇게 되면 해당 클래스의 하위클래스에서 super.clone()으로 호출할 때 상위 객체에서 잘못된 클래스가 생성될 수 있기에 위험하다.
+
+* 상위 클래스의 clone() 값을 반환하면 안되고, 하위 클래스 타입으로 변환한 뒤 반환해야 한다.
+* clone() 을 재정의한 클래스가 final 클래스인 경우에는 하위 클래스가 없기 때문에 안전하다.
+
+
+
+모든 필드가 기본 타입이거나 불변 객체를 참조하는 경우 이 객체는 완벽한 상태이므로 clone()를 제공하지 않는 것이 좋다.
+
+- 쓸데 없는 복사를 지양한다는 관점에서 불변 클래스는 굳이 clone 메소드를 제공하지 않는 것이 좋다.
+
+
+
+```java
+@Override
+public PhoneNumber clone() {
+    try {
+        return (PhoneNumber) super.clone();
+    } catch (CloneNotSupportedException e) {
+        throw new AssertionError();
+    }
+}
+```
+
+- 자바에서는 `공변 반환 타이핑`을 지원하기 때문에 재정의한 메소드의 반환 타입은 상위 클래스의 메소드가 반환하는 타입의 하위 타입일 수 있다.
+
+  ###### 	공변반환 타이핑 : 메소드가 오버라이딩될 때 더 좁은 타입으로 교체할 수 있다는 것
+
+- 클라이언트가 형변환 하지 않도록 인터페이스를 제공한다.
+
+- 위 예시 코드에서 try-catch로 super.clone을 감쌌는데 이는 Object의 clone 메소드가 **검사 예외(checked exception)** 로 제공되는 것을 **비검사 예외(unchecked exception)** 로 처리하도록 한다.
+
+
+
+#### 가변 객체를 참조하는 경우
+
+```java
+public class Stack {
+    private Object[] elements;
+    private int size = 0;
+    private static final int DEFAULT_INITIAL_CAPACITY = 16;
+
+    public Stack() {
+        this.elements = new Object[DEFAULT_INITIAL_CAPACITY];
+    }
+
+    public void push(Object e) {
+        ensureCapacity();
+        elements[size++] = e;
+    }
+
+    public Object pop() {
+        if (size == 0)
+            throw new EmptyStackException();
+        Object result = elements[--size];
+        elements[size] = null;
+        return result;
+    }
+
+    private void ensureCapacity() {
+        if (elements.length == size) {
+            elements = Arrays.copyOf(elements, 2 * size + 1);
+        }
+    }
+}
+```
+
+이 클래스를 복제하기 위해서 clone이 super.clone을 그대로 반환하게되면 stack인스턴스의 size는 같은 필드 값을 가지게 되겠지만, elements의 경우 원본과 같은 배열을 참조한다. 따라서 **원본 데이터가 변경되는 경우 같이 수정된다.** 
+
+clone 메소드는 사실상 생성자와 같은 효과를 낸기에 원본 객체에 아무런 해를 끼치지 않는 동시에 복제된 객체의 불변식을 보장해야 한다. 따라서 이런 가변적인 값을 가지고 있을 때 제대로 동작하게 만들기 위해서는 스택 내부 정보를 복사해야 한다. 이 예시에서는 elements 배열의 clone을 재귀로 호출하는 방법을 사용한다.
+
+```java
+@Override
+public Stack clone() {
+    try {
+        Stack clone = (Stack) super.clone();
+        clone.elements = elements.clone();
+        return clone;
+    } catch(CloneNotSupportedException e) {
+        throw new AssertionError();
+    }
+}
+```
+
+배열의 clone은 런타임 타입과 컴파일 타입 모두가 원본 배열과 같은 배열을 반환
+
+* 배열을 복제할 때는 배열의 clone 메소드를 사용하라고 권장한다.
+* 배열은 clone 기능을 제대로 사용하는 유일한 예
+
+elements 필드가 final인 경우에는 새로운 값을 할당 불가능하기 때문에 사용할 수 없다.
+
+* 복제 가능한 클래스를 위해 final 한정자를 제거해야 하는 경우도 있다.
+
+
+
+또한 Hash테이블에서의 clone메소드의 경우에서도 문제가 발생한다.
+
+```java
+@Override
+public HashTable clone() {
+    try {
+        HashTable result = (HashTable) super.clone();
+        result.buckets = buckets.clone();
+        return result;
+    } catch(CloneNotSupportedException e){
+        throw new AssertionError();
+    }
+}
+```
+
+여기서 우리가 복제하고자 하는 복제본은 자기 사진의 버킷 배열을 가지게 되지만 원본과 같은 연결 리스트를 참고하기 때문에 원본과 복제본 둘 다 예기치 않게 동작 할 수 있다.
+
+* 이는 각 버킷을 구성하는 연결리스트를 복사하면 된다.
+
+이 방법을 위해 HashTable.Entry는 `깊은복사(Deep copy)`를 지원하도록 보강되었다.
+
+* 이 방식 또한 재귀 호출 때문에 리스트의 원소 수 만큼 스택 프레임을 사용하여 리스트가 긴 경우에는 스택오버플로를 일으킬 위험이 있다.
+
+
+
+#### 복잡한 가변 객체를 복제하는 방법
+
+super.clone() 을 호출하여 얻은 객체의 **모든 필드를 초기 상태로 설정**한다. 이후 원본 객체의 상태를 다시 생성하는 **고수준 메소드들을 호출**한다. 하지만 이 방법은 저수준에서 바로 처리할 때보다는 느리고, Cloneable 아키텍처의 기초가 되는 필드 단위 객체 복사를 우회하기 때문에 전체 Cloneable 아키텍처와는 어울리지 않는 방식이다.
+
+
+
+#### clone() 메소드 재정의 시 주의사항
+
+- clone() 메소드는 CloneNotSupportedException을 던진다고 선언되어 있지만 재정의한 메소드는 수정해야 한다.
+- public clone 메소드에서는 throws 절을 없애야 한다.
+  - 검사 예외를 비검사예외로 수정해야 그 메소드를 사용하기에 편리하기 때문
+
+
+
+#### 복사 생성자와 복사 팩토리(변환 생성자와 변환 팩토리)
+
+이미 Cloneable을 구현한 클래스는 어쩔 수 없지만 그게 아니라면 복사 생성자와 복사 팩토리라는 객체 복사 방식을 고려할만 하다. 
+
+##### cloneable/clone 방식에 비해 좋은 점
+
+* 언어 모순적이고 생성자를 쓰지않는 객체 생성 메커니즘을 사용하지 않는다.
+
+* 정상적인 final 필드 용법과도 충돌하지 않는다.
+
+* 불필요한 예외가 발생하지 않는다.
+
+* 형변환도 필요하지 않다. 
+
+* 해당 클래스가 구현한 '인터페이스'타입의 인스턴스를 인수로 받을 수 있다.
+
+  ex : HashSet을 TreSet 타입으로 복제할 수 있다. 
+
