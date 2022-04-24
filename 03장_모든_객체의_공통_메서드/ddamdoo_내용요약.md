@@ -618,3 +618,156 @@ super.clone() 을 호출하여 얻은 객체의 **모든 필드를 초기 상태
 
   ex : HashSet을 TreSet 타입으로 복제할 수 있다. 
 
+
+
+---
+
+
+
+## Item 14. Comparable을 구현할지 고려하라
+
+
+
+객체에서 정렬이 필요할 때 Comparator, Comparable 인터페이스를 많이 사용한다.  
+
+##### Comparable: 인터페이스를 구현한 객체 스스로에게 부여하는 한 가지 기본 정렬 규칙을 설정
+
+##### Comparator: 인터페이스를 구현한 클래스는 정렬 규칙 그 자체. 기본 정렬 규칙과는 다르게 사용자가 원하는대로 정렬 순서를 지정
+
+Comparable 인터페이스는 `compareTo`라는 메소드를 정의하는데, 이 메소드는 Object 메소드가 아니다. 
+
+* 성격은 Object의 equals와 유사한데, 동치성 비교뿐만 아니라 **순서까지 비교가 가능**하고 **제네릭**하다는 차이점이 있다. 
+
+자바에서 제공하는 모든 값 클래스와 열거 타입이 Comparable을 구현했기 때문에 알파벳, 숫자, 번호등 순서가 있는 값 클래스를 만들 때 Comparable 를 구현해야 한다.
+
+
+
+##### 정렬과 관련된 다른 클래스들
+
+- HashSet
+  - 데이터를 중복 저장할 수 없고, 순서를 보장하지 않음
+- TreeSet
+  - 중복된 데이터를 저장할 수 없고, 입력한 순서대로 값을 저장하지 않음
+  - TreeSet은 기본적으로 오름차순으로 데이터를 정렬
+- LinkedHashSet
+  - 중복된 데이터를 저장할 수 없고, 입력된 순서대로 데이터를 관리함
+
+
+
+#### compareTo 메소드의 일반 규약
+
+compareTo 메소드의 일반 규약은 equals과 비슷하다.  Comparable 을 구현한 객체는 다음 규약들을 지켜야 한다. 
+
+* ##### 해당 객체와 주어진(매개변수) 객체의 순서를 비교한다.
+
+  * 해당 객체가 더 크다면 양수를 반환
+  * 해당 객체가 더 작다면 음수를 반환
+  * 해당객체와 주어진 객체가 같을경우 0을 반환 
+  * 해당 객체와 비교할 수 없는 타입의 객체가 전달되면 `ClassCastException`이 발생
+
+* ##### 대칭성을 보장
+
+  *  모든 x, y클래스에 대해서 `sgn(x.compareTo(y) == -sgn(y.compareTo(x))`여야 한다.
+  *  x.compareTo(y)는 y.compareTo(x)가 예외를 던질 때에 한해서 예외가 발생해야 한다.
+
+* ##### 추이성을 보장
+
+  * 객체 x, y, z가 있다고 할 때 x.compareTo(y)가 양수이고 y.compareTo(z)도 양수라면, x.compareTo(z)도 양수여야한다. (x > y && y > z 이면 x > z여야 한다.)
+
+* x.compareTo(y) == 0 이면 sgn(x.compareTo(z)) == sgn(y.compareTo(z)) 이어야 한다.
+* x.compareTo(y) == 0 이면 x.equals(y)어야 한다.
+  *  이 규약은 필수적인 규악은 아니지만 지키는 것이 좋다.
+
+
+
+#### equals 규약과의 차이점
+
+대칭성, 추이성, 반사성 규약은 equals와 같아보이지만 모든 객체에 대해 전역 동치관계를 부여하는 equals와 다르게 compareTo는 **타입이 다른 객체를 신경쓰지 않고**, 다른 객체가 있는 경우 `ClassCastException`을 던지면 된다.
+
+
+
+#### compareTo의 작성 요령
+
+equals와 비슷하지만, Comparable은 타입을 인수로 받는 제네릭 인터페이스라서 compareTo 메소드의 인수 타입은 컴파일타임에 정해진다. 따라서 입력 인수의 타입을 확인하거나 형 변환 할 필요가 없다. 만약 인수 타입이 잘못되면 컴파일이 되지 않고,  null을 인수로 넣으면 NPE을 던져야 한다.
+
+compareTo의 작성 요령
+
+* 각 필드의 동치관계를 보는게 아니라 그 **순서**를 비교한다. 
+* 객체 참조 필드를 비교하려면 compareTo 메소드를 **재귀적으로 호출**한다. 
+* Comparable을 구현하지 않은 필드나 표준이 아닌 순서로 비교해야 할 경우 Comparator를 쓰면 된다. 
+
+##### 참조 필드가 하나인 사용 예시
+
+```java
+public final class CaseInsensitiveString implements Comparable<CaseInsensitiveString> {
+    public int compareTo(CaseInsensitiveString cis) {
+        return String.CASE_INSENSITIVE_ORDER.compare(s, cis.s);
+    }
+}
+```
+
+자바 7 버전 이후부터는 박싱된 기본 타입 클래스들에 compare를 이용하는 것이 가능하다. compareTo를 이용할 때 부등호를 이용하는 것에서 오류가 많이 생기기 때문에 이러한 방법을 사용한다.
+
+##### 참조 필드가 여러 개인 사용 예시
+
+```java
+public int compareTo(PhoneNumber pn) {
+    int result = Short.compare(areaCode, pn.areaCode);
+    if(result == 0) {
+        result = Short.compare(prefix, pn.prefix);
+        if(result == 0) {
+            result = Short.compare(lineNum, pn.lineNum);
+        }
+    }
+    return result;
+}
+```
+
+
+
+자바 8 에서는 Comparator 인터페이스가 비교자 생성 매서드와 함께 메소드 연쇄 방식으로 비교자를 생성할 수 있게 되었다.
+
+
+
+```java
+public static final Comparator<PhoneNumber> COMPARATOR = 
+        comparingInt((PhoneNumber pn) -> pn.areaCode)
+        .thenComparingInt(pn -> pn.prefix)
+        .thenComparingInt(pn -> pn.lineNum);
+
+public int compareTo(PhoneNumber pn) {
+    return COMPARATOR.compare(this, pn);
+}
+```
+
+이 코드는 클래스 초기화시 비교자 생성 메소드 2개를 이용해 비교자를 생성한다.
+
+최초의 comparingInt에서는 객체 참조를 int 타입 키에 매핑하는 키 추출 함수를 인수로 받아 해당 키를 기준으로 순서를 정하는 비교자를 반환하는 정적 메소드다. 여기서 키를 받아 순서를 정하는 비교자를 반환하도록 한다. 위 예시에서는 areaCode가 기준이 된다.
+
+areaCode가 같은 경우가 있을 수 있기에 thenComparingInt를 통해서 추가적인 비교자 반환을 하도록 한다.
+
+
+
+객체 간 순서를 정한다고 해시코드를 기준으로 정렬하기도 하는데 단순히 첫 번째 값이 크면 양수, 같으면 0, 첫 번째 값이 작으면 음수를 반환한다는 것만 생각해서 아래와 같이 작성을 해선 안된다.
+
+```java
+static Comparator<Object> hashCodeOrder = new Comparator<>() {
+    public int compare(Object o1, Object o2) {
+        return o1.hashCode() - o2.hashCode();
+    }
+};
+```
+
+이 방식은 정수 오버플로 혹은 IEEE754 부동소수점 계산 방식에 따른 오류를 낼 수 있고, 속도 이슈도 존재한다. 만약 사용해야 하는 경우 정적 compare 메소드 혹은 비교자 생성 메소드를 사용해야 한다.
+
+```java
+static Comparator<Object> hashCodeOrder = new Comparator<>() {//정적 compare 메소드
+    @Override
+    public int compare(Object o1, Object o2) {
+        return Integer.compare(o1.hashCode(), o2.hashCode());
+    }
+};
+
+static Comparator<Object> hashCodeOrder = //비교자 생성 메소드
+    Comparator.comparingInt(o -> o.hashCode());
+```
