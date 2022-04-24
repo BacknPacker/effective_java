@@ -49,6 +49,8 @@ equals 메소드는 재정의하기 쉬워보이지만 종종 발생하는 문�
 
 ### equals의 재정의가 필요한 경우
 
+
+
 #### 객체 식별성(두 객체가 물리적으로 같은 지)이 아니라 논리적 동치성(두 객체가 논리적으로 같은 지)이 필요한 경우
 
 주로 두 객체가 같은지가 아니라 값이 같은지를 알기 위한 값 클래스가 여기에 포함된다.
@@ -231,7 +233,7 @@ public class ColorPointFromComposition {
 
 ### equals 메소드 구현방법
 
-1. ##### ==연산자를 사용해 입력이 자기 자신의 참조인지(반사성) 확인
+1. ##### == 연산자를 사용해 입력이 자기 자신의 참조인지(반사성) 확인
 
    * 자기자신이면 true를 반환하여 성능 최적화를 할 수 있도록 함
 
@@ -690,11 +692,15 @@ compareTo 메소드의 일반 규약은 equals과 비슷하다.  Comparable 을 
 
 equals와 비슷하지만, Comparable은 타입을 인수로 받는 제네릭 인터페이스라서 compareTo 메소드의 인수 타입은 컴파일타임에 정해진다. 따라서 입력 인수의 타입을 확인하거나 형 변환 할 필요가 없다. 만약 인수 타입이 잘못되면 컴파일이 되지 않고,  null을 인수로 넣으면 NPE을 던져야 한다.
 
-compareTo의 작성 요령
+
+
+##### 작성 요령
 
 * 각 필드의 동치관계를 보는게 아니라 그 **순서**를 비교한다. 
 * 객체 참조 필드를 비교하려면 compareTo 메소드를 **재귀적으로 호출**한다. 
 * Comparable을 구현하지 않은 필드나 표준이 아닌 순서로 비교해야 할 경우 Comparator를 쓰면 된다. 
+
+
 
 ##### 참조 필드가 하나인 사용 예시
 
@@ -707,6 +713,8 @@ public final class CaseInsensitiveString implements Comparable<CaseInsensitiveSt
 ```
 
 자바 7 버전 이후부터는 박싱된 기본 타입 클래스들에 compare를 이용하는 것이 가능하다. compareTo를 이용할 때 부등호를 이용하는 것에서 오류가 많이 생기기 때문에 이러한 방법을 사용한다.
+
+
 
 ##### 참조 필드가 여러 개인 사용 예시
 
@@ -750,6 +758,8 @@ areaCode가 같은 경우가 있을 수 있기에 thenComparingInt를 통해서 
 
 객체 간 순서를 정한다고 해시코드를 기준으로 정렬하기도 하는데 단순히 첫 번째 값이 크면 양수, 같으면 0, 첫 번째 값이 작으면 음수를 반환한다는 것만 생각해서 아래와 같이 작성을 해선 안된다.
 
+
+
 ```java
 static Comparator<Object> hashCodeOrder = new Comparator<>() {
     public int compare(Object o1, Object o2) {
@@ -758,7 +768,11 @@ static Comparator<Object> hashCodeOrder = new Comparator<>() {
 };
 ```
 
+
+
 이 방식은 정수 오버플로 혹은 IEEE754 부동소수점 계산 방식에 따른 오류를 낼 수 있고, 속도 이슈도 존재한다. 만약 사용해야 하는 경우 정적 compare 메소드 혹은 비교자 생성 메소드를 사용해야 한다.
+
+
 
 ```java
 static Comparator<Object> hashCodeOrder = new Comparator<>() {//정적 compare 메소드
