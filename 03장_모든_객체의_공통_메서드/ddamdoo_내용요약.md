@@ -224,10 +224,10 @@ public class ColorPointFromComposition {
 
 
 
-##### nullable
+##### null-아님
 
 * null이 아닌 모든 참조 값 x에 대해서, x.equals(null)은 false여야 한다.
-* true만 반환하지 않으면 된다는게 아니라 NullPointerException도 발생시켜서는 안된다.
+* true만 반환하지 않으면 된다는게 아니라 NPE도 발생시켜서는 안된다.
 
 
 
@@ -678,6 +678,7 @@ compareTo 메소드의 일반 규약은 equals과 비슷하다.  Comparable 을 
 
 * x.compareTo(y) == 0 이면 sgn(x.compareTo(z)) == sgn(y.compareTo(z)) 이어야 한다.
 * x.compareTo(y) == 0 이면 x.equals(y)어야 한다.
+  
   *  이 규약은 필수적인 규악은 아니지만 지키는 것이 좋다.
 
 
@@ -785,3 +786,4 @@ static Comparator<Object> hashCodeOrder = new Comparator<>() {//정적 compare �
 static Comparator<Object> hashCodeOrder = //비교자 생성 메소드
     Comparator.comparingInt(o -> o.hashCode());
 ```
+
