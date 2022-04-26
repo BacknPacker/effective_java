@@ -90,3 +90,34 @@
 하지만, 모듈에 적용되는 접근 수준은 모듈의 JAR 파일을 자신의 모듈 경로가 아니라 애플리케이션 classpath에 두면 그 모듈 안의 모든 패키지는 모듈이 없는 것 처럼 행동하기 때문에  모듈 공개여부와 상관없이 public 클래스가 선언한 모든 public과 protected 멤버를 모듈 밖에서 접근할 수 있게 된다. 
 
 또한 모듈을 제대로 사용하기 위해서는 패키지를 모듈 단위로 묶고, 모듈 선언에 패키지들의 모든 의존성 명시해야하고, 소스 트리 재배치 뒤, 모듈 안으로부터 일반 패키지로의 모든 접근에 조치를 취해야 한다. 
+
+
+
+---
+
+
+
+## Item 16. public 클래스에서는 public 필드가 아닌 접근자 메서드를 사용하라.
+
+
+
+```java
+public class Point {
+    private double x;
+    private double y;
+
+    public Point(double x, double y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    public double getX() { return x; }
+    public void setX(double x) { this.x = x; }
+    public double getY() { return y; }
+    public void setY(double y) { this.y = y; }
+}
+```
+
+객체지향 프로그래머는 필드를 private으로 사용하고, public 접근자를 이용해서 접근하도록 한다. 패키지 바깥에서 접근할 수 있는 클래스라면 접근자를 통해 접근하고, 내부 표현 방식을 언제든 바꿀 수 있도록 유연성을 가지게 한다.
+
+하지만 package-private이나 private 중첩 클래스는 데이터 필드를 노출하더라도 해당 클래스가 표현하고자 하는 추상 개념만 제대로 표현해주면 된다. 클라이언트 코드가 이 클래스 내부 표현에 묶이게 되지만, 클라이언트가 이 클래스를 포함하는 패키지 안에서만 동작하기에 문제가 되지 않는다. 
