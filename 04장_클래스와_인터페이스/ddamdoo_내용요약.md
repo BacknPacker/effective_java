@@ -211,3 +211,173 @@ public class Point {
 
 * ##### 생성자는 불변식 설정이 모두 완료된 ,초기화가 완벽히 끝난 상태의 객체를 생성해야한다.
   * 확실한 이유가 없다면 생성자와 정적 팩토리 외에는 그 어떤 초기화 메소드도 public으로 제공하면 안된다.
+
+
+
+---
+
+
+
+## Item 18. 상속보다는 컴포지션을 사용하라
+
+
+
+상속은 코드 재사용을 활용하는 좋은 수단이지만 항상 최선은 아니다. 상속을 써도 문제가 없는 경우에는 아래 두 가지 방법 밖에없다.
+
+* 상위 클래스와 하위 클래스가 모두 통제되는 패키지 안에 있을 경우
+* 확장할 목적으로 설계되었고 문서화도 잘 된 클래스
+
+
+
+상속은 메소드 호출을 하는 방식과는 다르게 캡슐화를 깨뜨린다.
+
+```java
+public class InstrumentedHashSet<E> extends HashSet<E> {
+    private int addCount = 0;
+
+    public InstrumentedHashSet() {
+    }
+
+    public InstrumentedHashSet(int initialCapacity, float loadFactor) {
+        super(initialCapacity, loadFactor);
+    }
+
+    @Override
+    public boolean add(E e) {
+        addCount++;
+        return super.add(e);
+    }
+
+    @Override
+    public boolean addAll(Collection<? extends E> c) {
+        addCount += c.size();
+        return super.addAll(c);
+    }
+
+    public int getAddCount() {
+        return addCount;
+    }
+
+    public static void main(String[] args) {
+        InstrumentedHashSet<String> s = new InstrumentedHashSet<>();
+        s.addAll(Arrays.asList("1", "2", "3"));
+
+        System.out.println(s.getAddCount());
+    }
+}
+
+```
+
+위와 같이 클래스를 구현하고, 아래 프린트문을 실행하게 되면 우리가 원하는 값인 3이 아니라 6을 반환하게 된다.
+
+##### ![1651211032204](ddamdoo_내용요약.assets/1651211032204.png)
+
+그 이유는 HashSet 의 addAll 이란 메소드에서 add 메소드를 사용하기 때문에 addAll과  add 모두 실행되어서 2씩 증가된 것이다.
+
+
+
+##### 내부 구현 방식의 문제점
+
+HashSet 문서에는 당연히도 쓰여있지 않고, addAll을 재정의하지 않으면 고칠 수 있는 문제다.
+
+* add 메소드만 재정의하여 addCount를 증가시키는것도 다음 릴리즈에서 HashSet의 내부 구현이 어떻게 변경되냐에 따라 깨지기 쉽다.
+* 하위 클래스에서 상위 클래스의 private 필드를 써야 하는 경우 구현이 불가능하다.
+* 또한 addAll이나 add가 아니라 새로운 메소드를 추가해 기능을 넣는다면, 문제가 없어보이고 실제로도 위 재정의 방법보다는 안전하지만, 만약 새로운 릴리즈에서 추가된 메소드가 시그니처는 같고 반환타입은 다른 경우에는 또 문제가 발생한다. 
+
+이러한 문제를 해결하기 위해 사용하는 방법이 `컴포지션`이다.
+
+
+
+#### 컴포지션
+
+기존 클래스가 새로운 클래스의 구성요소로 쓰이는 설계
+
+새로운 클래스에서 기존 클래스에 대응하는 메소드를 호출하면 새로운 클래스는 기존 클래스의 메소드를 호출해서 결과를 반환하는데 이를 `전달(forwarding)`이라 하며, 이런 새로운 클래스의 메소드를 `전달 메소드(forwarding method)`라 부른다. 
+
+```java
+import java.util.*;
+
+class CompositionInstrumentedSet<E> extends ForwardingSet<E>{
+    private int addCount = 0;
+
+    public CompositionInstrumentedSet(Set<E> s) {
+        super(s);
+    }
+
+    @Override
+    public boolean add(E e) {
+        addCount ++;
+        return super.add(e);
+    }
+
+    @Override
+    public boolean addAll(Collection<? extends E> collection) {
+        addCount += collection.size();
+        return super.addAll(collection);
+    }
+
+    public int getAddCount() {
+        return addCount;
+    }
+}
+
+class ForwardingSet<E> implements Set<E> {
+    private final Set<E> s;
+
+    public ForwardingSet(Set<E> s) {
+        this.s = s;
+    }
+
+    @Override
+    public int size() { return s.size(); }
+    @Override
+    public boolean isEmpty() { return s.isEmpty(); }
+    @Override
+    public boolean contains(Object o) { return s.contains(o); }
+    @Override
+    public Iterator<E> iterator() { return s.iterator(); }
+    @Override
+    public Object[] toArray() { return s.toArray(); }
+    @Override
+    public <T> T[] toArray(T[] ts) { return s.toArray(ts); }
+    @Override
+    public boolean add(E e) { return s.add(e); }
+    @Override
+    public boolean remove(Object o) { return s.remove(o); }
+    @Override
+    public boolean containsAll(Collection<?> collection) { return s.containsAll(collection); }
+    @Override
+    public boolean addAll(Collection<? extends E> collection) { return s.addAll(collection); }
+    @Override
+    public boolean retainAll(Collection<?> collection) { return s.retainAll(collection); }
+    @Override
+    public boolean removeAll(Collection<?> collection) { return s.removeAll(collection); }
+    @Override
+    public void clear() { s.clear(); }
+}
+
+class CompositionApplication {
+    public static void main(String[] args) {
+        CompositionInstrumentedSet<String> s = new CompositionInstrumentedSet<String>(new HashSet<>());
+
+        s.addAll(Arrays.asList("1", "2", "3"));
+
+        System.out.println(s.getAddCount());
+    }
+}
+```
+
+##### ![1651213103886](ddamdoo_내용요약.assets/1651213103886.png)
+
+추가 회수를 저장하는 클래스인 InstrumentedSet과 HashSet에 있는 모든 기능을 정의한 Set 인터페이스를 구현했기에 견고하고 유연하다. 컴포지션은 한 번만 구현해두면 사용한 인터페이스의 어떠한 구현체에도 적용이 가능하다. 또한 기존 클래스 내부 구현방식의 영향에서 벗어나며, 기존 클래스의 새로운 메서드가 추가되더라도 전혀 영향받지 않는다.
+
+
+
+래퍼 클래스는 다른 인스턴스를 감싸고 있는 클래스로, 데코레이터 패턴이라고 부른다. 래퍼 클래스는 단점이 거의 없고, **콜백 프레임워크와 어울리지 않는다**는 점만 주의하면 된다.
+
+콜백 프레임워크에서는 자기 자신의 참조를 다른 객체에 넘겨 다음 호출(콜백) 때 사용하도록 한다. 내부 객체는 자신을 감싸고 있는 래퍼의 존재를 모르니 대신 자신(this)의 참조를 넘기고, 콜백 때는 래퍼가 아닌 내부 객체를 호출하게 되는데 이를 **SELF문제**라 한다. 전달 메서드, 래퍼 객체가 메모리 사용량에 비용 낭비가 생기지 않나 걱정할 수 있지만, 실제로는 둘 다 별다른 영향을 끼치지 않는다. 
+
+
+
+상속은 하위클래스가 상위 클래스의 진짜 하위 타입인 경우에만 사용되야 한다. 클래스들의 관계가 `is-a` 관계라고 확신할 수 없다면 상속하지 말아야 한다.
+
