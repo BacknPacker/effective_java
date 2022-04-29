@@ -572,3 +572,41 @@ default 메소드를 사용할 때는 다음과 같은 주의사항이 있다.
 
 골격구현은 기본적으로 상속해서 사용하기 때문에 **설계 및 문서화**를 잘 해두어야 한다.
 
+
+
+---
+
+
+
+## Item 21. 인터페이스는 구현하는 쪽을 생각해 설계하라
+
+자바 8 버전 이전에는 인터페이스에 기존 구현부를 깨지 않고는 메소드를 추가할 수 없었다. 8버전 부터는 디폴트 메소드를 사용하여 이를 해결하였지만 이것도 완벽하지는 않다.
+
+
+
+```java
+default boolean removeIf(Predicate<? super E> filter) {  
+	Objects.requireNonNull(filter);  
+	boolean removed = false;  
+	final Iterator<E> each = iterator();  
+	while (each.hasNext()) {  
+		 if (filter.test(each.next())) {  
+			 each.remove();  
+			 removed = true;  
+		 }  
+	}  
+	return removed;  
+}
+```
+
+예시로 나와있는 removeIf 메소드는 boolean 함수가 true를 반환하는 모든 원소를 제거한다.
+
+Collection의 removeIf는 현재 범용적으로 사용을 하고 있지만, 아직까지 모든 Collection 구현체와 잘 어울지 않는다. `SynchronizedCollection`의 경우 removeIf를 사용하게 되면 `ConcurrentModificationException`을 발생시키거나, 다른 결과를 보내준다.
+
+자바에서는 이러한 문제를 예방하기 위해 구현한 인터페이스의 디폴트 메소드를 재정의하고, 다른 메소드에서는 디폴트 메소드 호출 전 필요한 작업을 수행하도록 했다. 하지만 자바 플랫폼에 속하지 않은 것들은 수정될 기회가 없다.
+
+또한 디폴트 메소드는 흔한일은 아니지만 기존 구현체에 런타임 오류를 발생시키는 경우도 있다.
+
+
+
+따라서 우리는 디폴트 메소드라는 좋은 도구가 있더라도 인터페이스 설계를 할 때 주의를 기울여야 한다. 또한 새로운 인터페이스라면 릴리스 전에 반드시 테스트를 거쳐야 한다.
