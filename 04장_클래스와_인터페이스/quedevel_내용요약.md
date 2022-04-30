@@ -1,5 +1,4 @@
 # 🔥 [ Chapter4 ] 클래스와 인터페이스
-**_추상화의 기본 단위인 클래스와 인터페이스는 자바 언어의 심장과도 같다._**
 
 ## 🎯  아이템 15. 클래스와 맴버의 접근 권한을 최소화하라.
 > 오직 API를 통해서만 다른 컴포넌트와 소통하며 서로의 내부 동작 방식에는 전혀 개의치 않는다.<br>
@@ -43,8 +42,8 @@ public static final List<Thing> VALUES = Collections.unmodifiableList(Arrays.asL
 ```java
 private static final Thing[] PRIVATE_VALUES = { ... };
 public static final Thing[] values(){
-        return PRIVATE_VALUES.clone();
-        }
+    return PRIVATE_VALUES.clone();    
+}
 ```
 
 > `public` 클래스는 상수용 `public static final` 필드 외에는 어떠한 `public` 필드도 가져서는 안된다.<br>
@@ -66,7 +65,7 @@ public class Point {
     // private
     private double x;
     private double y;
-
+    
     // getter, setter
     public double getX() { return x; }
     public double getY() { return y; }
@@ -345,9 +344,139 @@ public interface PhysicalConstants {
 
 
 ## 🎯  아이템 23. 태그 달린 클래스보다는 클래스 계층구조를 활용하라.
+* 태그 달린 클래스 - **<span style='color:red;'>클래스 계층구조보다 훨씬 나쁘다!</span>**
+```java
+public class Figure {
+    enum Shape { RECTANGLE, CIRCLE };
+
+    // 태그 필드 - 현재 모양을 나타낸다.
+    final Shape shape;
+
+    // 다음 필드들은 모양이 사각형(RECTANGLE)일 때만 쓰인다.
+    double length;
+    double width;
+
+    // 다음 필드는 모양이 원(CIRCLE)일 때만 쓰인다.
+    double radius;
+
+    // 원용 생성자
+    Figure(double radius) {
+        shape = Shape.CIRCLE;
+        this.radius = radius;
+    }
+
+    // 사각형용 생성자
+    Figure(double length, double width) {
+        shape = Shape.RECTANGLE;
+        this.length = length;
+        this.width = width;
+    }
+
+    double area() {
+        switch(shape) {
+            case RECTANGLE:
+                return length * width;
+            case CIRCLE:
+                return Math.PI * (radius * radius);
+            default:
+                throw new AssertionError(shape);
+        }
+    }
+}
+```
+1️⃣ 태그 달린 클래스는 장황하게, 오류를 내기 쉽고, 비효율적이다.<br>
+2️⃣ 태그 달린 클래스는 클래스 계층구조를 어설프게 흉내낸 아류일 뿐이다.<br>
 
 ## 🎯  아이템 24. 맴버 클래스는 되도록 static으로 만들라.
+* 예제 ) 빌더 패턴
+```java
+public class Member {
+    private long mbrSn;
+    private String mbrId;
+    private String mbrPw;
+    private String mbrNm;
+
+    public Member(Builder builder) {
+        this.mbrSn = builder.mbrSn;
+        this.mbrId = builder.mbrId;
+        this.mbrPw = builder.mbrPw;
+        this.mbrNm = builder.mbrNm;
+    }
+
+    public static Builder builder(String id, String pw) {
+        return new Builder(id, pw);
+    }
+
+    public static class Builder {
+        public long mbrSn;
+        public String mbrId;
+        public String mbrPw;
+        public String mbrNm;
+
+        private Builder(String mbrId, String mbrPw) {
+            this.mbrId = mbrId;
+            this.mbrPw = mbrPw;
+        }
+
+        public Builder with(Consumer<Builder> consumer) {
+            consumer.accept(this);
+            return this;
+        }
+
+        public Member build() {
+            return new Member(this);
+        }
+    }
+    
+    /* getter 생략 */
+    ...
+}
+    
+```
+> 정적 맴버 클래스(`Builder`)는 다른 클래스 안에 선언되고, 바깥 클래스(`Member`)의 <br>
+> private 맴버에도 접근할 수 있다는 점만 제외하고는 일반 클래스와 똑같다.<br>
+> 정적 맴버 클래스와 비정적 맴버 클래스의 구문상 차이는 단지 static이 붙어 있고 없고 뿐이지만, 의미상 차이는 의외로 꽤 크다. <br>
+> 비정적 맴버 클래스의 인스턴스는 바깥 클래스의 인스턴스와 암묵적으로 연결된다. 그래서 비정적 맴버 클래스의 인스턴스 메서드에서 <br>
+> 정규화된 this를 사용해 바깥 인스턴스의 메서드를 호출하거나 바깥 인스턴스의 참조를 가져올 수 있다.
+
+⭐ 그렇다면 비정적 맴버 클래스는 어디에 쓰이나? - 비정적 맴버 클래스는 어댑터를 정의할 때 자주 쓰인다.<br>
+즉, 어떤 클래스의 인스턴스를 감싸 마치 다른 클래스의 인스턴스처럼 보이게하는 뷰로 사용하는 것이다.
+
+
+<br>
+
+* 비정적 맴버 클래스의 흔한 쓰임 - 자신의 반복자 구현
+
+```java
+public class MySet<E> extends AbstractSet<E> {
+    ... // 생략
+
+    @Override
+    public Iterator<E> iterator() {
+        return new MyIterator();
+    }
+
+    private class MyIterator implements Iterator<E> { ... }
+}
+```
+**_맴버 클래스에서 바깥 인스턴스에 접근할 일이 없다면 무조건 static을 붙여서 정적 맴버 클래스로 만들자._** <br>
+static을 생략하면 바깥 인스턴스로의 숨은 외부 참조를 갖게 된다. 이 참조를 저장하려면 시간과 공간이 소비된다. <br>
+더 심각한 문제는 가비지 컬렉션이 바깥 클래스의 인스턴스를 수거하는 메모리 누수가 생길 수 있다는 점이다.
+
+⭐ **핵심 정리** <br>
+> 중첩 클래스에는 네 가지가 있으며, 각각의 쓰임이 다르다. 메서드 밖에서도 사용해야 하거나 메서드 안에 정의하기엔 너무 <br>
+> 길다면 맴버 클래스로 만든다. 맴버 클래스의 인스턴스 각각이 바깥 인스턴스를 참조한다면 비정적으로, 그렇지 않으면 정적으로 <br>
+> 만들자. 중첩 클래스가 한 메서드 안에서만 쓰이면서 그 인스턴스를 생성하는 지점이 단 한 곳이고 해당 타입으로 쓰기에 <br>
+> 적합한 클래스나 인터페이스가 이미 있다면 익명 클래스로 만들고, 그렇지 않으면 지역 클래스로 만들자.
+
 
 ## 🎯  아이템 25. 톱레벨 클래스는 한 파일에 하나만 담으라.
+![javac Main.java](https://user-images.githubusercontent.com/55771326/166093728-1cbcde20-ebab-4a47-b319-6ad84a43c636.PNG)
+⭐ **핵심 정리** <br>
+> 소스 파일 하나에는 반드시 **_톱레벨 클래스를 하나만 담자._** 이 규칙만 따른다면 컴파일러가 한 클래스에 대한 정의를 여러 개 만들어 내는 <br>
+> 일은 사라진다. 소스 파일을 어떤 순서로 컴파일하든 바이너리 파일이나 프로그램의 동작이 달라지는 일은 결코 일어나지 않을 것이다.
 
 ## ⭐ 결론
+**_추상화의 기본 단위인 클래스와 인터페이스는 자바 언어의 심장과도 같다._** <br>
+**_그래서 자바 언어에는 클래스와 인터페이스 설계에 사용하는 강력한 요소가 많이있다._** <br>
+**_이번한 요소를 적절히 활용하여 클래스와 인터페이스를 쓰기 편하고, 견고하며, 유연하게 만들자._** <br>
