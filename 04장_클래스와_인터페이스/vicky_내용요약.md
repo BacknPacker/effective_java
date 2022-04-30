@@ -218,3 +218,79 @@ public class Test {
     }
 }
 ```
+<br>
+
+<hr>
+
+### ❗ 강의 내용추가
+##### 아이템 15. 클래스와 멤버의 접근권한을 최소화하라.
++ public의 한계: Tread safe하지 못하고, Lock류의 작업 불가
++ 객체 배열은 public static final이어도 수정이 가능
+	+ 배열이 가지고 있는 참조값의 수정 
+##### 아이템 16. public 클래스에서는 public 필드가 아닌 접근자 메서드를 사용하라.
++ 내부 용어만 변경하는 경우의 사례
+```java
+public class ItemInfo {
+	private String name;
+	private int price;
+	public ItemInfo(String name, int price){
+		this.name = name;
+		this.price = price;
+	}
+	
+	// get, set 메서드에서 setName 메서드만 없애서 좀 더 strict한 규정을 만들 수 있다.
+	// 이 코드를 통해 name은 변경되지 않는 변수라는 것을 유추할 수 있다.
+}
+```
++ 캡슐화는 꼭 한 번 점검하고 접근제어자는 습관적으로 항상 최소로 사용하자.
+##### 아이템17. 변경 가능성을 최소화하라.
++ 불변 클래스
++ 자신을 제외하고는 아무도 가변 컴포넌트에 접근할 수 없도록 한다.
+```java
+@Getter
+class AddressInfo{
+	private String address;
+}
+@AllArgsConstructor	// 모든 필드 값을 파라미터로 받는 생성자를 만듦
+final class User{
+	private final String phone;
+	private final List<AddressInfo> addressInfoList;
+	public List<String> getAddressList(){
+		return addressInfoList.stream()
+			.map(AddressInfo::getAddress).collect(Collectors.toList());
+	}
+}
++BigInteger
+```java
+BigInteger bigInteger = new BigInteger("10000");
+System.out.println(bigInteger.add(new BigInteger("100")));
+System.out.println(bigInteger);
+// 기존 bigInteger 값에는 변화가 없다.
+```
++ 데이터를 받아올 때 entity 말고, vo로 직접 만들어서 불변성을 강제하는 방법을 사용할 수 있다.
+##### 아이템 18. 상속보다는 컴포지션을 사용하라.
++ 상속은 캡슐화를 깨트린다.
++ 본문 잘못된 상속사례(코드 18-1) 참조
+```java
+public class HashSet<E>{
+	public boolean add (E e){ ... }
+	public boolean addAll (Collection<? extends E> c){ 
+		c.forEach(d->add(d));
+		return true;
+	}
+}
+```
+##### 아이템 19. 상속을 고려해 설계하고 문서화하라. 그러지 않으면 상속을 금지하라.
++ 상속금지를 위해 생성자를 private, package-private로 하고 정적 팩토리 메서드를 사용하라.
++ 올바른 상속여부를 확인하기 위해 하위 object를 만들어서 확인하자.
++ 왠만하면 interface를 통한 구현을 추천
+##### 아이템 20. 추상클래스보다는 인터페이스를 우선하라.
++ 확장과 구현의 차이
+	+ public class Sub extends Super implements Serializable, Cloneable {}
+	+ public interface Sub extends Serializable, Cloneable {}
++ 중복 디폴트 메서드로 인한 컴파일 에러 발생을 고려
+##### 아이템 22. 인터페이스는 타입을 정의하는 용도로만 사용하라.
++ 상수 공개용은 class에 담아서 사용하자
++ 상수를 이용하고 싶다면 properties에 선언하고 injection하는 것도 방법
+##### 아이템 25. 톱레벨 클래스는 한 파일에만 담으라
++ Top level class is a class that is not a nested class.
