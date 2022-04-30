@@ -643,3 +643,116 @@ public interface PhysicalConstants {
 * 열거 타입으로 나타내기 적합한 상수라면 열거 타입으로 만들어 공개한다.
 * 인스턴스화할 수 없는 유틸리티 클래스에 담아 공개한다.
 
+
+
+---
+
+
+
+## Item 23. 태그 달린 클래스보다는 클래스 계층구조를 활용하라
+
+
+
+```java
+public class Figure {
+    enum Shape {RECTANGLE, CIRCLE}
+
+    // 태그
+    private final Shape shape;
+
+    // 사각형일때만 사용
+    private final double length;
+    private final double width;
+
+    // 원형일때만 사용
+    private final double radius;
+
+    public Figure(Shape shape, double radius) {
+        this.shape = shape;
+        this.length = 0;
+        this.width = 0;
+        this.radius = radius;
+    }
+
+    public Figure(Shape shape, double length, double width) {
+        this.shape = shape;
+        this.length = length;
+        this.width = width;
+        this.radius = 0;
+    }
+
+    public double area() {
+        switch (shape) {
+            case RECTANGLE:
+                return length * width;
+            case CIRCLE:
+                return Math.PI * (radius * radius);
+            default:
+                throw new IllegalArgumentException();
+        }
+    }
+}
+```
+
+
+
+#### 태그 달린 클래스의 단점
+
+* 열거 타입선언, 태그 필드, switch등 쓸데없는 코드가 많다.
+* 여러 구현이 한 클래스 내부에 있어 가독성이 좋지 않다.
+* 메모리를 많이 사용한다.
+* 필드를 final로 선언하기 위해서는 쓰지않는 필드들 전부를 초기화해야 한다.
+* 인스턴스 타입만으로는 현재 나타내는 의미를 알수가 없다.
+* 장황하고, 오류 내기 쉽고, 비효율적이다.
+
+
+
+이러한 단점이 있는 태그 달린 클래스는 객체지향 언어에서 사용하는 클래스 계층 구조를 활용하여 바꾸는 것이 좋다. 
+
+
+
+##### 태그 달린 클래스를 계층 구조로 바꾸는 방법
+
+1. 계층구조를 만들 때는 root가 되는 클래스를 정의하고, 태그 값에 따라 달라지는 메소드를 추상 메소드로 선언한다.
+2. 태그 값에 상관 없이 동작하는 메소드를 root 클래스의 일반 메소드로 추가한다.
+3. 모든 하위 클래스에서 공통으로 사용되는 데이터 필드를 root 클래스에 선언한다.
+4. 루트 클래스를 확장한 구현 클래스를 의미별로 정의한다.
+
+
+
+```java
+public abstract class Figure {
+    public abstract double area();
+}
+
+public class Circle extends Figure {
+    private final double radius;
+
+    public Circle(double radius) {
+        this.radius = radius;
+    }
+
+    @Override
+    public double area() {
+        return Math.PI * (radius * radius);
+    }
+}
+
+public class Rectangle extends Figure{
+    private final double length;
+    private final double width;
+
+    public Rectangle(double length, double width) {
+        this.length = length;
+        this.width = width;
+    }
+
+    @Override
+    public double area() {
+        return length * width;
+    }
+}
+```
+
+이렇게 계층구조로 변경했을 때는 코드가 **간결하고 명확**하며, 쓸모없는 코드들이 모두 사라진다. 또한 관련없던 데이터 필드를 제거하여 초기화에도 문제가 없다. 또한 타입 사이의 계층 관계를 반영할 수 있어 유연성이 높아졌다.
+
