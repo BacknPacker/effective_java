@@ -851,3 +851,63 @@ public class Rectangle extends Figure{
 - 지역 변수를 선언할 수 있는 곳이면 실질적으로 어디서든 선언할 수 있고, 유효 범위도 지역 변수와 같다.
 - 멤버 클래스처럼 이름이 있고 반복해서 사용할 수 있다.
 - 익명 클래스처럼 비정적 문맥에서 사용될 때만 바깥 인스턴스를 참조할 수 있으며, 정적 멤버는 가질 수 없으며 가독성을 위해 짧게 작성해야 한다.
+
+
+
+---
+
+
+
+## Item 25. 톱레벨 클래스는 한 파일에 하나만 담으라
+
+소스 파일 하나에 톱레벨 클래스를 여러 개 선언하더라도 자바 컴파일러는에서 따로 불평하지 않는다.
+
+하지만 컴파일 오류가 생길 가능성이 있다. 이렇게 하면 한 클래스를 여러 가지로 정의할 수 있지만 어느 것을 사용할지는 어느 소스 파일을 먼저 컴파일하냐에 따라 달라지기 때문이다.
+
+```java
+class Utensil {
+    static final String NAME = "pan";
+}
+
+class Dessert {
+    static final String NAME = "cake";
+}
+```
+
+```java
+class Utensil {
+    static final String NAME = "pot";
+}
+
+class Dessert {
+    static final String NAME = "pie";
+}
+```
+
+이렇게 이름이 다른 Utensil.java와 Dessert.java에 동일한 클래스를 정의하였을 경우, 어떻게 컴파일 되느냐에 따라서 결과가 pan cake이 나올 수도 있고, pot pie가 나올 수도 있다.
+
+###### ※ 책에서는 javac Main.java Desert.java 명령으로 컴파일 시 컴파일 오류가 발생한다고 하는데 JDK11 기준 에러는 발생하지 않는다. 
+
+
+
+이러한 문제를 해결하기 위해서는 다음과 같은 간단한 두 가지 방법을 이용하면 된다.
+
+1. 한 개의 파일에 한 개의 톱레벨 클래스만 둔다.
+2. 정적 멤버 클래스 방식을 사용한다.
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        System.out.println(Utensil.NAME + Dessert.NAME);
+    }
+
+    private static class Utensil {
+        static final String NAME = "pan";
+    }
+
+    private static class Dessert {
+        static final String NAME = "cake";
+    }
+}
+```
+
