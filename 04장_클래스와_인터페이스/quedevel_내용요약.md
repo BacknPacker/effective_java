@@ -42,8 +42,8 @@ public static final List<Thing> VALUES = Collections.unmodifiableList(Arrays.asL
 ```java
 private static final Thing[] PRIVATE_VALUES = { ... };
 public static final Thing[] values(){
-    return PRIVATE_VALUES.clone();    
-}
+        return PRIVATE_VALUES.clone();
+        }
 ```
 
 > `public` 클래스는 상수용 `public static final` 필드 외에는 어떠한 `public` 필드도 가져서는 안된다.<br>
@@ -65,7 +65,7 @@ public class Point {
     // private
     private double x;
     private double y;
-    
+
     // getter, setter
     public double getX() { return x; }
     public double getY() { return y; }
@@ -471,7 +471,44 @@ static을 생략하면 바깥 인스턴스로의 숨은 외부 참조를 갖게 
 
 
 ## 🎯  아이템 25. 톱레벨 클래스는 한 파일에 하나만 담으라.
-![javac Main.java](https://user-images.githubusercontent.com/55771326/166093728-1cbcde20-ebab-4a47-b319-6ad84a43c636.PNG)
+* javac Main.java Dessert.java
+```java
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by FernFlower decompiler)
+//
+
+package com.quecode.chapter4;
+
+public class Main {
+    public Main() {
+    }
+
+    public static void main(String[] var0) {
+        System.out.println("potpie");
+    }
+}
+```
+
+* javac Main.java Utensil.java
+```java
+//
+// Source code recreated from a .class file by IntelliJ IDEA
+// (powered by FernFlower decompiler)
+//
+
+package com.quecode.chapter4;
+
+public class Main {
+    public Main() {
+    }
+
+    public static void main(String[] var0) {
+        System.out.println("pancake");
+    }
+}
+```
+
 ⭐ **핵심 정리** <br>
 > 소스 파일 하나에는 반드시 **_톱레벨 클래스를 하나만 담자._** 이 규칙만 따른다면 컴파일러가 한 클래스에 대한 정의를 여러 개 만들어 내는 <br>
 > 일은 사라진다. 소스 파일을 어떤 순서로 컴파일하든 바이너리 파일이나 프로그램의 동작이 달라지는 일은 결코 일어나지 않을 것이다.
