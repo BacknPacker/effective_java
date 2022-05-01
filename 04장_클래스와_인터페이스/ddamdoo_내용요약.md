@@ -15,7 +15,7 @@
 ### 정보 은닉(캡슐화)의 장점
 
 * 시스템 개발 속도를 높힌다.
-  * 여러 컴포넌트(개발, 테스트, 최적화...)가 개별적으로(병렬로) 개발 가능하기 때문이다.
+  * 여러 컴포넌트(개발, 테스트, 최적화)가 개별적으로 개발 가능하기 때문이다.
 * 시스템 관리 비용을 낮춘다. 
   * 각 컴포넌트를 더 빨리 파악하여 디버깅이 가능하고 컴포넌트 교체도 부담이 적기 때문이다.
 
@@ -886,7 +886,11 @@ class Dessert {
 
 이렇게 이름이 다른 Utensil.java와 Dessert.java에 동일한 클래스를 정의하였을 경우, 어떻게 컴파일 되느냐에 따라서 결과가 pan cake이 나올 수도 있고, pot pie가 나올 수도 있다.
 
-###### ※ 책에서는 javac Main.java Desert.java 명령으로 컴파일 시 컴파일 오류가 발생한다고 하는데 JDK11 기준 에러는 발생하지 않는다. 
+###### ※ 책에서는 javac Main.java Desert.java 명령으로 컴파일 시 컴파일 오류가 발생한다고 하는데 JDK 11 기준 에러는 발생하지 않는다. 
+
+> http://openjdk.java.net/jeps/181
+>
+> https://www.studytonight.com/java-11/nestbased-access-control-in-java-11
 
 
 
