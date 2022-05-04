@@ -1,5 +1,21 @@
 # Effective Java 4장 제네릭
 
+###### ※ 4장 전반적으로 많이 사용하는 용어
+
+| 한글 명칭                | 영어 명칭               | 예시                               |
+| ------------------------ | ----------------------- | ---------------------------------- |
+| 매개변수화 타입          | parameterized type      | `List<String>`                     |
+| 실제 타입 매개변수       | actual type parameter   | `String`                           |
+| 제네릭 타입              | generic type            | `List<E>`                          |
+| 정규 타입 매개변수       | formal type parameter   | `E`                                |
+| 비한정적 와일드카드 타입 | unbounded wildcard type | `List<?>`                          |
+| 로 타입                  | raw type                | `List`                             |
+| 한정적 타입 매개변수     | bounded type parameter  | `<E extends Number>`               |
+| 재귀적 타입 한정         | recursive type bound    | `<T extends Comparable<T>>`        |
+| 한정적 와일드카드 타입   | bounded wildcard type   | `List<? extends Number>`           |
+| 제네릭 메서드            | generic method          | `static <E> List<E> asList(E[] a)` |
+| 타입 토큰                | type token              | String.class                       |
+
 
 
 ## Item 26. 로 타입은 사용하지 말라
@@ -97,19 +113,33 @@ static int numElementsInCommon(Set<?> s1, Set<?> s2){}
 
 
 
-###### ※ 4장 전반적으로 많이 사용하는 용어
+---
 
-| 한글 명칭                | 영어 명칭               | 예시                               |
-| ------------------------ | ----------------------- | ---------------------------------- |
-| 매개변수화 타입          | parameterized type      | `List<String>`                     |
-| 실제 타입 매개변수       | actual type parameter   | `String`                           |
-| 제네릭 타입              | generic type            | `List<E>`                          |
-| 정규 타입 매개변수       | formal type parameter   | `E`                                |
-| 비한정적 와일드카드 타입 | unbounded wildcard type | `List<?>`                          |
-| 로 타입                  | raw type                | `List`                             |
-| 한정적 타입 매개변수     | bounded type parameter  | `<E extends Number>`               |
-| 재귀적 타입 한정         | recursive type bound    | `<T extends Comparable<T>>`        |
-| 한정적 와일드카드 타입   | bounded wildcard type   | `List<? extends Number>`           |
-| 제네릭 메서드            | generic method          | `static <E> List<E> asList(E[] a)` |
-| 타입 토큰                | type token              | String.class                       |
 
+
+## Item 27. 비검사 경고를 제거하라
+
+제네릭을 사용하면서 주로 나오는 경고
+
+* 비검사 형변환 경고
+* 비검사 메소드 호출 경고
+* 비검사 매개변수화 가변인수 타입 경고
+* 비검사 변환경고
+
+
+
+대부분의 비검사 경고는 IDE에서 `warning`으로 표기가 되며 컴파일러에서 지적을 해주기 때문에 쉽게 제거가 가능하고, 자바 7부터 지원하는 `<>`연산자를 이용하여 해결도 가능하다.
+
+
+
+##### 가능한 모든 비검사 경고를 제거하라
+
+* 제거하게 되면 코드는 타입 안전성이 보장되어 런타임에 `ClassCastException`이 발생하지 않는다.
+
+##### 경고를 제거할 수 없지만 안전하다고 생각되면 @SuppressWarnings("unchecked")를 사용하라
+
+* 경고 없이 컴파일은 되지만 만약에 문제가 있다면 런타임에는 여전히 `ClassCastException`를 던질 수 있다.
+
+##### @SuppressWarnings 어노테이션은 항상 가능한한 좁은 범위로 적용하자.
+
+##### @SuppressWarnings("unchecked")을 사용할 때 그 경고를 무시해도 되는 안전한 이유를 적어두자.
