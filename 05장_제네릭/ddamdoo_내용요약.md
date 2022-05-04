@@ -204,7 +204,104 @@ Super[] sub = new Sub[]{};
 
 
 
+---
 
-  
+
+
+## Item 29. 이왕이면 제네릭 타입으로 만들라
+
+
+
+```java
+public class Stack {
+    private Object[] elements;
+    private int size = 0;
+    private static final int DEFAULT_INITIAL_CAPACITY = 16;
+
+    public Stack() {
+        elements = new Object[DEFAULT_INITIAL_CAPACITY];
+    }
+
+    public void push(Object e) {
+        ensureCapacity();
+        elements[size++] = e;
+    }
+
+    public Object pop() {
+        if(size == 0) throw new EmptyStackException();
+        Object result = elements[--size];
+        elements[size] = null;
+        return result;
+    }
+}
+```
+
+이 코드는 아이템 7에서 다룬 단순한 코드의 일부이다. 이 코드는 제네릭으로 바꾼다고 하면 시스템에는 아무 문제가 없고, 오히려 지금 코드가 제네릭을 활용하지 않아 불안전한 상태이기 때문에 스택에서 꺼낸 객체를 형변환할 때 런타임 오류가 날 가능성이 있다.
+
+```java
+public class Stack<E> {
+    private E[] elements;
+    private int size = 0;
+    private static final int DEFAULT_INITIAL_CAPACITY = 16;
+
+    public Stack() {
+        elements = new E[DEFAULT_INITIAL_CAPACITY];
+    }
+
+    public void push(E e) {
+        ensureCapacity();
+        elements[size++] = e;
+    }
+
+    public E pop() {
+        if(size == 0) throw new EmptyStackException();
+        E result = elements[--size];
+        elements[size] = null;
+        return result;
+    }
+}
+```
+
+제네릭으로 변경은 했지만 전 장에서 말했듯이 `elements = new E[DEFAULT_INITIAL_CAPACITY];`라는 표현에서 우리가 사용하면 안된다고 했던 실체화 불가 타입으로 만들어진 배열이 존재한다. 이 문제는 두 가지 방법으로 해결이 가능하다.
+
+
+
+#### 제네릭 배열 생성을 금지하는 제약을 우회하는 방법
+
+기존의 코드를 `elements = (E[]) new Object[DEFAULT_INITIAL_CAPACITY];`로 Object 배열을 생성하고, 제네릭 배열로 형변환 하는 방식이다.
+
+* 이렇게 하면 오류는 해결할 수 있지만, 대신 `Unchecked cast`경고가 생긴다.
+  - 이 방식에서는 배열 elements는 private 필드에 저장되며, 클라이언트로 반환되거나 다른 메서드로 전달되는 일이 없습니다. 즉, 비검사 형변환은 안전하기 때문에  `@SuppressWarnings` 어노테이션을 통해 해당 경고를 숨기면 된다.
+
+이 방식은 코드가 짧아서 가독성이 좋다는 장점과 형변환을 배열 생성 시에만 해주면 된다는 장점이 있다.
+
+하지만 배열의 런타임 타입이 컴파일타임 타입과 달라 힙오염이 발생할 수 있다.
+
+
+
+#### elements 필드 타입을 Object[]로 바꾸는 방법
+
+```java
+public class Stack<E> {
+    private Object[] elements;
+    private int size = 0;
+    private static final int DEFAULT_INITIAL_CAPACITY = 16;
+
+    public Stack() {
+        elements = new Object[DEFAULT_INITIAL_CAPACITY];
+    }
+    ...
+}
+```
+
+이런 식으로 코드를 변경하면 오류는 없지만 경고가 발생한다. 또한 pop 메소드에서 Object에서 E로 형변환이 되야 하기 때문에 런타임 오류가 발생할 수 있다.
+
+* 경고는 `@SuppressWarnings("unchecked")` 어노테이션을 이용하고, 형변환 문제는 타입캐스팅을 해준다.
+
+  ```java
+  @SuppressWarnings("unchecked") E result = (E) elements[--size];
+  ```
+
+이 방식은 코드의 길이는 다소 길지만 힙오염이 발생하지 않는다는 장점이 있다.
 
 - - 타임에 ClassCastException이 발생하는 일을 막아주겠다는 제네릭 타입 시스템의 취지에 어긋난다.
