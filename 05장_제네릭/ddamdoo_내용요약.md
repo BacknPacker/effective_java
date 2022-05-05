@@ -271,7 +271,7 @@ public class Stack<E> {
 기존의 코드를 `elements = (E[]) new Object[DEFAULT_INITIAL_CAPACITY];`로 Object 배열을 생성하고, 제네릭 배열로 형변환 하는 방식이다.
 
 * 이렇게 하면 오류는 해결할 수 있지만, 대신 `Unchecked cast`경고가 생긴다.
-  - 이 방식에서는 배열 elements는 private 필드에 저장되며, 클라이언트로 반환되거나 다른 메서드로 전달되는 일이 없습니다. 즉, 비검사 형변환은 안전하기 때문에  `@SuppressWarnings` 어노테이션을 통해 해당 경고를 숨기면 된다.
+  - 이 방식에서는 배열 elements는 private 필드에 저장되며, 클라이언트로 반환되거나 다른 메소드로 전달되는 일이 없습니다. 즉, 비검사 형변환은 안전하기 때문에  `@SuppressWarnings` 어노테이션을 통해 해당 경고를 숨기면 된다.
 
 이 방식은 코드가 짧아서 가독성이 좋다는 장점과 형변환을 배열 생성 시에만 해주면 된다는 장점이 있다.
 
@@ -304,4 +304,109 @@ public class Stack<E> {
 
 이 방식은 코드의 길이는 다소 길지만 힙오염이 발생하지 않는다는 장점이 있다.
 
-- - 타임에 ClassCastException이 발생하는 일을 막아주겠다는 제네릭 타입 시스템의 취지에 어긋난다.
+- 타임에 ClassCastException이 발생하는 일을 막아주겠다는 제네릭 타입 시스템의 취지에 어긋난다.
+
+
+
+---
+
+
+
+##  Item 30. 이왕이면 제네릭 메소드로 만들라
+
+메소드도 클래스와 마찬가지로 제네릭으로 만들 수 있다.
+
+```java
+public static Set union(Set s1, Set s2) {
+		Set result = new HashSet(s1);
+		result.addAll(s2);
+		return result;
+}
+```
+
+책에 나와있는 이 예시는 반환타입, 매개변수가 로 타입이기에 새로운 HashSet을 만들고 거기에 s1을 넣는 것이 안전하지 않고, addAll로 s2 를 넣는 것도 안전하지 않다. 이 메소드를 제네릭을 이용해서 안전하게 만들면 다음과 같다.
+
+```java
+public static <E> Set<E> union(Set<E> s1, Set<E> s2) {
+    Set<E> result = new HashSet<>(s1);
+    result.addAll(s2);
+    return result;
+}
+```
+
+
+
+#### 제네릭 싱글톤 팩토리
+
+불변 객체를 여러 타입으로 활용할 수 있게 만들어야 하는 경우가 종종 생기는데, 제네릭은 런타임시 타입 정보가 소거 된다. 그래서 하나의 객체를 어떤 타입으로든 매개변수화가 가능한데, 이게 가능하려면 요청한 타입 매개변수에 맞게 객체의 타입을 바꿔주는 정적 팩토리를 만들어야 한다.
+
+이러한 패턴을 **제네릭 싱글톤 팩토리**라 하며 `Collections.reverseOrder`같은 함수 객체나 `Collections.emptySet`같은 컬렉션용으로 사용한다.
+
+책에서는 항등함수를 이용하여 예시를 보여주었다.
+
+- 항등 함수 객체는 상태가 없고, 제네릭이 실체화된다면 항등함수를 타입별로 만들어야 하지만, 소거가 되기 때문에 제네릭 싱글턴 하나면 충분하다.
+
+```java
+public static UnaryOperator<Object> IDENTITY_FN = (t) -> t;
+
+@SuppressWarnings("unchecked")
+public static <T> UnaryOperator<T> identiyFunction() {
+	return (UnaryOperator<T>) IDENTITY_FN;
+```
+
+
+
+```java
+public static void main(String[] args) {
+    String[] strings = { "삼베", "대마", "나일론" };
+    UnaryOperator<String> sameString = identityFunction();
+    for (String s : strings)
+        System.out.println(sameString.apply(s));
+
+    Number[] numbers = { 1, 2.0, 3L };
+    UnaryOperator<Number> sameNumber = identityFunction();
+    for (Number n : numbers)
+        System.out.println(sameNumber.apply(n));
+}
+```
+
+
+
+#### 재귀적 타입 한정(recursive type bound)
+
+자기 자신이 들어간 표현식을 사용해 타입 매개변수의 허용 범위를 한정하는 것으로 주로 Comparable 인터페이스와 함께 사용된다.
+
+```java
+public interface Comparable<T> {
+	int compareTo(T o);
+}
+```
+
+위는 comparable 인터페이스이다. 여기서 T는 구현한 타입이 비교할 수 있는 원소를 정의하는데 String이나 Integer 등이 필요할 때마다 `Comparable<String>` , `Comparable<Integer>`와 같이 구현한다. 이것을 재귀적 타입 한정을 이용하면 아래와 같이 사용할 수 있다.
+
+```java
+public static <E extends Comparable<E>> Optional<E> max(Collection<E> c);
+```
+
+타입한정인 `<E extends Comparable<E>>`은 **모든 타입 E는 자신과 비교할 수 있다.** 아래에 이를 구현한 메소드는 원소의 순서 기준으로 최댓값을 계산하고, 컴파일 오류가 발생하지 않는 코드이다.
+
+```java
+public static <E extends Comparable<E>> Optional<E> max(Collection<E> c) {
+    if(c.isEmpty()){
+    	return Optional.empty();  
+    } 
+    
+    E result = null;
+    for (E e : c) {
+        if(result == null || e.compareTo(result) > 0) {
+            result = Objects.requireNonNull(e);
+        }
+    }
+    return Optional.of(result);
+}
+```
+
+
+
+재귀적 타입 한정은 복잡해질 가능성도 존재하긴 하지만 그런 경우는 많지 않고, 반환값을 명시적으로 형변환해야 하는 메소드보다 제네릭 메소드가 훨씬 안전하고 사용하기도 쉽다.
+
