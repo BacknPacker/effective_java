@@ -410,3 +410,114 @@ public static <E extends Comparable<E>> Optional<E> max(Collection<E> c) {
 
 재귀적 타입 한정은 복잡해질 가능성도 존재하긴 하지만 그런 경우는 많지 않고, 반환값을 명시적으로 형변환해야 하는 메소드보다 제네릭 메소드가 훨씬 안전하고 사용하기도 쉽다.
 
+
+
+---
+
+
+
+## Item 31. 한정적 와일드카드를 사용해 API 유연성을 높이라
+
+
+
+매개변수화 타입은 불공변이기 때문에 서로 다른 타입이 있을 때 상/하위가 나뉘지 않는다. 예를 들어 `List<String>`은 `List<Object>`의 하위 타입이 아니고, 그렇기에 `List<String>`은 `List<Object>`가 하는 일을 제대로 수행하지 못한다.
+
+실재로 책에 나온 예시를 해보면 Number타입의 Integer값을 넣을 때도 제대로 동작해야 하지만 오류가 나오는 것을 볼 수 있다.
+
+```java
+public class Stack<E> {
+    public Stack();
+	public void push(E e);
+    public E pop();
+    public boolean isEmpty();
+    public void pushAll(Iterable<E> src) {
+        for(E e : src) push(e);
+    }
+}
+```
+
+```java
+Stack<Number> numStack = new Stack<>();
+Iterable<Integer> integers = ..;
+numStack.pushAll(integers);
+```
+
+여기서 오류의 이유는 매개변수화 타입이 불공변이기 때문이다. 자바는 이러한 상황을 대처하기 위해 `한정적 와일드카드 타입`이라는 매개변수화 타입을 지원한다.
+
+```java
+public void pushAll(Iterable<? extends E> src){
+    for(E e:src)
+        push(e);
+}
+```
+
+위 코드가 한정적 와일드카드 타입을 적용한 코드이다. 매개변수의 타입을 `Iterable<E>` 에서 `Iterable<? extends E>` 으로 와일드카드 타입을 적용해준 뒤 코드의 타입 안전하여 오류가 발생하지 않는 것을 확인할 수 있다.
+
+이처럼 유연성을 극대화 하기 위해서는 원소의 생산자나 소비자용 입력 매개변수에 **와일드카드 타입**을 사용해야 한다.
+
+어떤 타입의 와일드 카드 타입을 써야 하는지 아래처럼 생산자면 `extends`를, 소비자면 `super`를 사용하면 된다.
+
+* PECS : producer - extends, consumer - super
+
+여기서 말하는 생산자와 소비자의 정이는 스택 클래스에서 push와 pop이라고 생각하면 된다.
+
+##### 생성자
+
+* 입력 매개변수로부터 이 컬렉션으로 원소를 옮겨 담는다는 뜻
+
+- ```
+  public void pushAll(Iterable<? extends E> src) {
+  	for (E e : src) {
+  		push(e);
+  	}
+  }
+  ```
+
+##### 소비자
+
+* 컬렉션 인스턴스의 원소를 입력 매개변수로 옮겨 담는다는 뜻
+
+- ```
+  public void popAll(Collection<? super E> dst) {
+  	while (!isEmpty()) {
+  		dst.add(pop());
+  	}
+  }
+  ```
+
+만약 API를 사용할 때 한정적 와일드카드 타입을 사용하면 클라이언트 코드에서도 와일드 카드 타입을 신경써야 하기 때문에 API에 문제가 있는 것이다.
+
+또한 Collection에서 사용하는 코드들 중에서도 한정적 와일드카드 타입을 사용하는 것이 좋다. Comparable와 comparator은 일반적으로 소비자이므로 `Comparable<E>`보다는 `Comparable<? super E>`로 사용하는 편이 좋고, Comparator는 `Comparator<E>`보다 `Comparator<? super E>`를 사용하는 편이 좋다.
+
+
+
+#### 타입 매개변수와 와일드카드
+
+```java
+public static <E> void swap(List<E> list, int i, int j);
+public static void swap(List<?> list, int i, int j);
+```
+
+이 두 코드는 타입매개변수와 와일드카드를 사용한 코드이다. 여기서 두 코드의 장점이 각각 다르다. 일반적으로 public API로 사용할 때는 두 번째 코드가 좋다. 그 이유는 기본 규칙을 생각해보면 된다.
+
+* 매소드 선언에 타입 매개변수가 한번만 나오면 와일드 카드로 대체하라.
+
+  * 만약 비한정적 타입 매개변수면 비한정적 와일드카드로 변경하고, 한정적 타입 매개변수면 한정적 와일드카드로 변경한다.
+
+    ###### 한정적 와일드카드
+
+    *  `<T extends Number>`와 같이 특정 타입을 제한한다는 것
+
+    ###### 비한정적 와일드카드
+
+    * `?` 와 같은 타입으로 어떤 타입이 오던 관계가 없는 것
+
+하지만 두 번째 코드는 사용하면 null이외에는 어떠한 값도 넣을 수 없기 때문에 `도우미 메소드`를 선언해야 한다.
+
+```java
+public static <E> void swapHelper(List<E> list, int i, int j) {
+    list.set(i, list.set(j, list.get(i))); 
+}
+```
+
+구현 자체는 다소 복잡하지만 와일드카드 기반의 코드를 선언할 수 있게 된다.
