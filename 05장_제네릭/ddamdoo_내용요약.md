@@ -521,3 +521,89 @@ public static <E> void swapHelper(List<E> list, int i, int j) {
 ```
 
 구현 자체는 다소 복잡하지만 와일드카드 기반의 코드를 선언할 수 있게 된다.
+
+
+
+---
+
+
+
+## Item 32. 제네릭과 가변인수를 함께 쓸 때는 신중하라
+
+
+
+가변인수 메서드와 제네릭은 자바 5 때 함께 추가되었지만 잘 어울리지 않는다. 가변인수 메서드를 호출하면 가변인수를 담기 위한 배열이 자동으로 하나 만들어지고, 내부로 감춰야할 이 배열이 클라이언트에게 노출이 된다. 이 때 배열 안에 제네릭이나 매개변수화 타입이 포함되면 컴파일 에러가 발생한다.
+
+대부분의 제네릭과 매개변수화 타입은 실체화 불가 타입이기에 생기는 에러로 메서드를 선언할 때 실체화 불가 타입으로 가변인수 매개변수를 선언할 경우 컴파일러가 경고를 내보내는데,  경고 내용은 매개변수화 타입의 변수가 타입이 다른 객체를 참조하면 **힙 오염**이 발생한다는 것이다.
+
+```java
+static void dangerous(List<String>... stringLists) {
+    List<Integer> intList = List.of(42);
+
+    Object[] objects = stringLists;
+    objects[0] = intList; // 힙 오염 발생
+    String s = stringLists[0].get(0); // ClassCastException
+}
+```
+
+이 코드에서 dangerous 메소드에서 파라미터인 `List<String>`는 실체화 불가 타입을 가변인수로 사용했다. 선언 이후 내부에서 **명시적으로 형변환을 하지 않았고**, stringList의 원소는 **매개변수화 타입**이기 때문에 컴파일시 **암묵적으로 형변환**하게 된다. 이러한 이유로 타입 안정성이 깨지기 때문에 **제네릭 가변인수 배열 매개본수에 값을 저장하는 것은 안전하지 않다** 라고 할 수 있다.
+
+제네릭 가변인수 매개변수를 받는 것이 안전하지 않으면서도 허용되는 이유는 **실무에서 매우 유용하기 때문이다.** 
+
+* 자바 라이브러리에서 `Arrays.asList`, `Collections.addAll`, `EnumSet.of` 와 같은 것들이 있다.
+  * 이 메소드들은 안전하다
+
+
+
+### @SafeVarargs
+
+자바 7 이후에는 우리가 `@SuppressWarnings("unchecked")`로 경고를 숨기듯이 `@SafeVarargs` 어노테이션을 통해서 **메소드 작성자가 그 메소드가 타입 안전함을 보장하는 장치로 사용**된다. 메소드가 **가변인수 배열에 아무것도 저장하지 않고 배열의 참조가 외부로 노출되지 않는다**면 안전하다고 한다. 가변인수 매개변수 배열이 오로지 메서드로 인수들을 전달하는 일만 수행한다면 안전함이 보장된다.
+
+
+
+#### 주의사항
+
+```java
+static <T> T[] toArray(T... args){
+		return args;
+}
+```
+
+이러한 식으로 가변인수 매개변수 배열에 아무 값도 저장하지 않는 경우에는 타입 안전성이 깨질 수 있다. 컴파일시간에 컴파일러에 충분한 정보가 주어지지 않아 매개변수 배열을 그대로 반환해 힙 오염이 메소드 생성한 부분까지 전이될 수 있다.
+
+```java
+static <T> T[] pickTwo(T a, T b, T c) {
+    switch (ThreadLocalRandom.current().nextInt(3)) {
+        case 0: return toArray(a, b);
+        case 1: return toArray(a, c);
+        case 2: return toArray(b, c);
+    }
+    throw new AssertionError();
+}
+```
+
+이러한 방식으로 랜덤하게 2개를 뽑는 메소드를 구현했다고 하면 컴파일상에서는 오류가 발생하지 않는다. 하지만 이를 사용하는 경우 문제가 생긴다.
+
+```java
+public static void main(String[] args) {
+    String[] strings = pickTwo("좋은", "빠른", "저렴한");
+}
+```
+
+이러한 식으로 사용하게 될 경우 `ClassCastException`을 발생시킨다. pickTwo 라는 메서드는 T 인스턴스 2개를 담은 매개변수 배열을 만들어 반환하는데 메소드의 결과는 항상 Object[] 일 수밖에 없다. 여기서 String[]으로 형변환하는 경우 컴파일러에서 자동 형변환을 하기 때문에 Object[]는 String[]의 하위 타입이 아니므로 형변환에 실패하면서 에러가 발생한다.
+
+
+
+#### 예외 케이스
+
+* `@SafeVarargs `어노테이션이 붙어있는 안전한 메서드
+* 가변인수 매개변수 배열을 넘기지 않아도 되는 일반 함수
+
+
+
+#### @SafeVarargs 어노테이션 사용 규칙
+
+* 제네릭이나 매개변수화 타입의 가변인수 매개변수를 받는 모든 메소드에 @SafeVarargs를 붙이면 된다.
+
+
+
