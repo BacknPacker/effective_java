@@ -22,10 +22,10 @@
 
 #### 제네릭이란
 
-* 자바 5부터 사용된 개념으로 클래스와 인터페이스 선언에 타입 매개변수가 쓰이면 제네릭 클래스, 제네릭 인터페이스라고 하고 이를 통틀어 제네릭 타입 이라고 한다.
+* 자바 5부터 사용된 개념으로 **클래스와 인터페이스 선언에 타입 매개변수가 쓰이면** 제네릭 클래스, 제네릭 인터페이스라고 하고 이를 통틀어 제네릭 타입 이라고 한다.
 * 제네릭 타입은 매개변수화 타입을 정의하는데 클래스 이름이 나오고 `<>` 안에 실제 타입 매개변수를 나열한다.
 * 제네릭 타입을 정의하면 그에 딸린 로 타입도 정의된다.
-  * 로 타입 : 제네릭 타입에서 타입 매개변수를 사용하지 않는 것. ex) List<E> 에서의 List
+  * 로 타입 : 제네릭 타입에서 타입 매개변수를 사용하지 않는 것. ex) `List<E>` 에서의 List
 
 
 
@@ -532,9 +532,9 @@ public static <E> void swapHelper(List<E> list, int i, int j) {
 
 
 
-가변인수 메서드와 제네릭은 자바 5 때 함께 추가되었지만 잘 어울리지 않는다. 가변인수 메서드를 호출하면 가변인수를 담기 위한 배열이 자동으로 하나 만들어지고, 내부로 감춰야할 이 배열이 클라이언트에게 노출이 된다. 이 때 배열 안에 제네릭이나 매개변수화 타입이 포함되면 컴파일 에러가 발생한다.
+가변인수 메소드와 제네릭은 자바 5 때 함께 추가되었지만 잘 어울리지 않는다. 가변인수 메소드를 호출하면 가변인수를 담기 위한 배열이 자동으로 하나 만들어지고, 내부로 감춰야할 이 배열이 클라이언트에게 노출이 된다. 이 때 배열 안에 제네릭이나 매개변수화 타입이 포함되면 컴파일 에러가 발생한다.
 
-대부분의 제네릭과 매개변수화 타입은 실체화 불가 타입이기에 생기는 에러로 메서드를 선언할 때 실체화 불가 타입으로 가변인수 매개변수를 선언할 경우 컴파일러가 경고를 내보내는데,  경고 내용은 매개변수화 타입의 변수가 타입이 다른 객체를 참조하면 **힙 오염**이 발생한다는 것이다.
+대부분의 제네릭과 매개변수화 타입은 실체화 불가 타입이기에 생기는 에러로 메소드를 선언할 때 실체화 불가 타입으로 가변인수 매개변수를 선언할 경우 컴파일러가 경고를 내보내는데,  경고 내용은 매개변수화 타입의 변수가 타입이 다른 객체를 참조하면 **힙 오염**이 발생한다는 것이다.
 
 ```java
 static void dangerous(List<String>... stringLists) {
@@ -557,7 +557,7 @@ static void dangerous(List<String>... stringLists) {
 
 ### @SafeVarargs
 
-자바 7 이후에는 우리가 `@SuppressWarnings("unchecked")`로 경고를 숨기듯이 `@SafeVarargs` 어노테이션을 통해서 **메소드 작성자가 그 메소드가 타입 안전함을 보장하는 장치로 사용**된다. 메소드가 **가변인수 배열에 아무것도 저장하지 않고 배열의 참조가 외부로 노출되지 않는다**면 안전하다고 한다. 가변인수 매개변수 배열이 오로지 메서드로 인수들을 전달하는 일만 수행한다면 안전함이 보장된다.
+자바 7 이후에는 우리가 `@SuppressWarnings("unchecked")`로 경고를 숨기듯이 `@SafeVarargs` 어노테이션을 통해서 **메소드 작성자가 그 메소드가 타입 안전함을 보장하는 장치로 사용**된다. 메소드가 **가변인수 배열에 아무것도 저장하지 않고 배열의 참조가 외부로 노출되지 않는다**면 안전하다고 한다. 가변인수 매개변수 배열이 오로지 메소드로 인수들을 전달하는 일만 수행한다면 안전함이 보장된다.
 
 
 
@@ -590,13 +590,13 @@ public static void main(String[] args) {
 }
 ```
 
-이러한 식으로 사용하게 될 경우 `ClassCastException`을 발생시킨다. pickTwo 라는 메서드는 T 인스턴스 2개를 담은 매개변수 배열을 만들어 반환하는데 메소드의 결과는 항상 Object[] 일 수밖에 없다. 여기서 String[]으로 형변환하는 경우 컴파일러에서 자동 형변환을 하기 때문에 Object[]는 String[]의 하위 타입이 아니므로 형변환에 실패하면서 에러가 발생한다.
+이러한 식으로 사용하게 될 경우 `ClassCastException`을 발생시킨다. pickTwo 라는 메소드는 T 인스턴스 2개를 담은 매개변수 배열을 만들어 반환하는데 메소드의 결과는 항상 Object[] 일 수밖에 없다. 여기서 String[]으로 형변환하는 경우 컴파일러에서 자동 형변환을 하기 때문에 Object[]는 String[]의 하위 타입이 아니므로 형변환에 실패하면서 에러가 발생한다.
 
 
 
 #### 예외 케이스
 
-* `@SafeVarargs `어노테이션이 붙어있는 안전한 메서드
+* `@SafeVarargs `어노테이션이 붙어있는 안전한 메소드
 * 가변인수 매개변수 배열을 넘기지 않아도 되는 일반 함수
 
 
@@ -607,3 +607,91 @@ public static void main(String[] args) {
 
 
 
+---
+
+
+
+## Item 33. 타입 안전 이종 컨테이너를 고려하라
+
+기존에 사용하던 제네릭 사용 방식은 컬렉션(`Set<E>`, `Map<K, V>`)이나 컨테이너(`ThreadLocal<T>`, `AtomicReference<T>`) 보다 유연하게 사용하기 위해 탄생한 것이 **타입 안전 이종 컨테이너 패턴**이다.
+
+#### 타입 안전 이종 컨테이너 패턴(type safe heterogeneous container pattern)
+
+* 컨테이너 대신 키를 매개변수화하여 컨테이너에 값을 넣거나 뺄 때 매개변수화한 키를 함께 제공하는 방식
+* 제네릭 타입 시스템이 값의 타입이 키와 같음을 보장해줄 수 있게 된다. 
+
+
+
+```java
+public class Favorites {
+		public <T> void putFavorite(Class<T> type, T instance);
+		public <T> T getFavorite(Class<T> type);
+}
+```
+
+타입 안전 이종 컨테이너의 예시이다. 각 타입의 Class 객체에서 class 의 클래스가 제네릭이기 때문에 Class 리터럴의 타입은 `Class`가 아닌 `Class<T>`이다. 
+
+* ex) `String.class`의 타입은 `Class<String>`이고, `Integer.class`의 타입은 `Class<Integer>`이다.
+
+컴파일타임 타입 정보와 런타임 타입 정보를 알아내기 위해 메서드들이 주고받는 class 리터럴을 **타입 토큰(type token)**이라 한다.
+
+사용 예시는 아래와 같다.
+
+```java
+public static void main(String[] args){
+		Favorites favorites = new Favorites();
+
+    favorites.putFavorites(String.class, "Java");
+    favorites.putFavorites(Integer.class, 1234);
+    favorites.putFavorites(Class.class, Favorites.class);
+
+    String favoriteStr = favorites.getFavorite(String.class);
+    Integer favoriteInt = favorites.getFavorite(Integer.class);
+    Class favoriteClass = favorites.getFavorite(Class.class);
+
+    System.out.printf("%s %x %s %n", favoriteStr, favoriteInt, favoriteClass.getName());
+
+}
+```
+
+```java
+private static class Favorites {
+    private Map<Class<?>, Object> favorites = new HashMap<>();
+
+    public <T> void putFavorites(Class<T> type, T instance){
+        favorites.put(Objects.requireNonNull(type), instance);
+    }
+
+    public <T> T getFavorite(Class<T> type) {
+        return type.cast(favorites.get(type));
+    }
+}
+```
+
+Favorites 에서 favorites의 타입을 보면 `Map<Class<?>, Object>`이다. 이는 비한정적 와일드카드를 사용하여 맵이 아니라 키가 와일드카드 타입이므로 다양한 타입을 지원할 수 있도록 한다.
+
+또한 맵의 값 타입이 Object라는 점은 키와 값 사이의 타입 관계를 보증하지 않아 모든 값이 키로 명시한 타입임을 보증하지 않는다. 자바 자체적으로 이 관계를 명시할 방법이 없지만 우리는 이 관계가 성립한다는 것을 알고있고, 이러한 이점을 누릴 수 있다.
+
+
+
+#### 메소드 구현
+
+##### putFavorite
+
+putFavorite 메서드는 주어진 Class 객체와 즐겨찾기 인스턴스를 favorites 변수에 추가하면 끝난다. 이 때 키와 값 사이의 `타입 링크(type linkage)`정보는 버려지기 때문에 이 값이 해당 키 타입의 인스턴스라는 정보는 사라진다. 하지만 getFavorite 메서드에서 관계를 되살릴 수 있으니 문제없다.
+
+##### getFavorite
+
+getFavorite 메서드는 주어진 Class객체에 해당하는 값을 favorites 변수에서 꺼낸다. 이 값은 아직은 Object타입이지만 우리는 키로 해당 값의 올바른 타입을 알기 때문에 Class의 cast메서드를 사용해 이 객체 참조를 Class 객체가 가리키는 방향으로 동적 형변환한다. 
+
+cast 메서드는 형변환 연산자의 동적 버전인데, 주어진 인수가 Class 객체가 알려주는 타입의 인스턴스인지 검사한 뒤 맞다면 인수를 반환하고 아니면 ClassCastException을 던진다. 그래서 이 코드가 깨끗하게 컴파일되면 getFavorites에서 호출하는 cast 메서드는 오류을 던지지 않아서 favorites 맵 안에 값은 해당 키의 타입과 항상 일치함을 알 수 있다.
+
+
+
+#### 제약사항
+
+* 악의적인 클라이언트가 Class 객체를 제네릭이 아닌 로타입으로 넘기면 인스턴스의 타입 안전성이 쉽게 깨진다.
+  * 이 경우 문제가 되지만 클라이언트 코드에서 컴파일 시에 비검사 경고가 뜬다.
+  * 타입 불변식을 어기지 않도록 하기 위해서는 instance의 타입이 type과 같은 타입인지 확인하여 타입 불변성을 지킬 수 있다.
+* 실체화 불가 타입에는 사용이 불가능하다.
+  * 이 제약에 대해서는 우회 방법이 존재하지 않는다.
