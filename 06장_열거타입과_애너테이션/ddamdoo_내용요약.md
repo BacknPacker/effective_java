@@ -270,3 +270,44 @@ Enum API 문서에 아래와 같이 명시되어있다.
 >
 > https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Enum.html
 
+
+
+---
+
+
+
+## Item 36. 비트 대신 EnumSet을 사용하라
+
+열거한 값들이 집합으로 사용되는 경우 각 상수에 서로 다른 2의 거듭제곱 값을 할당한 정수 열거 패턴을 사용해왔다.
+
+```java
+public class Text {
+    public static final int STYLE_BOLD          = 1 << 0; //1
+    public static final int STYLE_ITALIC        = 1 << 1; //2
+    public static final int STYLE_UNDERLINE     = 1 << 2; //4
+    public static final int STYLE_STRIKETHROUGH = 1 << 3; //8
+
+    public void applyStyles(int styles) {
+    }
+}
+```
+
+이 값들은 비트별 OR을 사용해 여러 상수를 하나의 집합으로 모을 수 있고 이러한 집합을 `비트 필드`라고 한다.
+
+비트 필드를 사용하면 비트별 연산을 통해 **집합 연산을 효율적으로 수행할 수 있다**는 장점이 있지만, **정수 열거 상수의 단점**과 **정수 열거 타입보다 해석이 어렵다**는 단점이 있다. 또한 **최대 몇 비트가 필요한지를 API작성 시 미리 예층하여 적절한 타입을 선택해야 한다.**
+
+따라서 이에 대한 대안으로 java.util 패키지의 `EnumSet` 클래스는 열거 타입 상수의 값으로 구성된 집합을 효과적으로 표현해준다. 
+
+* Set 인터페이스를 완벽히 구현하고, 타입이 안전하며 다른 어떤 Set 구현체와도 함께 사용 가능하다.
+* 내부가 비트 벡터로 구현되어 있으며 원소가 64개 이하인 경우 EnumSet 전체를 대부분 long 변수 하나로 표현하여 비트 필드에 비견되는 성능을 보여준다. 
+
+* `removeAll`과 `retainAll`과 같은 대량 작업은 비트를 효율적으로 처리할 수 있는 산술 연산을 써서 구현했다. 
+  * 비트를 직접 다룰 때 겪는 문제들을 EnumSet에서 대부분 해결해준다. 
+
+```java
+public class Text {  
+    public enum Style { BOLD, ITALIC, UNDERLINE, STRIKETHROUGH }
+    public void applyStyles(Set<Style> styleSet){ ... }
+}
+```
+
