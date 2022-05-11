@@ -55,8 +55,8 @@ public enum Orange{
   * 싱글톤은 원소가 하나인 열거 타입이라 볼 수 있고 열거 타입은 싱글턴의 일반화이다.
 * 타입 안전성을 제공한다. 
 * `namespace`가 있어서 이름이 같은 상수도 공존할 수 있다. 
-* 임의의 메서드나 필드를 추가할 수 있고, 임의의 인터페이스를 구현하게 할 수도 있다. 
-* 열거 타입은 자신 안의 정의된 상수들의 값을 배열에 담아 반환하는 정적메서드(values)를 제공한다. 
+* 임의의 메소드나 필드를 추가할 수 있고, 임의의 인터페이스를 구현하게 할 수도 있다. 
+* 열거 타입은 자신 안의 정의된 상수들의 값을 배열에 담아 반환하는 정적메소드(values)를 제공한다. 
 
 
 
@@ -151,7 +151,7 @@ public enum Operation {
 }
 ```
 
-apply 메서드가 추상 메서드로 선언되어 바로 옆에 붙어있기 때문에 새로운 상수를 추가할 때 apply를 재정의하지 않으면 컴파일되지 않는다. 
+apply 메소드가 추상 메소드로 선언되어 바로 옆에 붙어있기 때문에 새로운 상수를 추가할 때 apply를 재정의하지 않으면 컴파일되지 않는다. 
 
 이 방법으로 상수별 데이터와 혼용할수도 있다.
 
@@ -256,7 +256,7 @@ public enum PayrollDay {
 
 
 
-## Item 35. ordinal 메서드 대신 인스턴스 필드를 사용하라.
+## Item 35. ordinal 메소드 대신 인스턴스 필드를 사용하라.
 
 `ordinal 메소드`는 찾고자 하는 상수가 열거 타입에서 몇 번째 위치인지를 반환하는 메소드이다. 유용하게 사용이 가능하지만 **상수 선언 순서를 바꾸는 순간 메소드가 오동작하게된다.** 또한 **값의 중간을 비워둘 수 없다**라는 단점도 존재한다.
 
@@ -310,4 +310,193 @@ public class Text {
     public void applyStyles(Set<Style> styleSet){ ... }
 }
 ```
+
+
+
+---
+
+
+
+## Item 37. ordinal 인덱싱 대신 EnumMap을 사용하라
+
+
+
+배열이나 리스트에서 원소를 꺼낼 때 ordinal 메소드를 통해서 인덱스를 가져오는 경우가 있는데 여기에는 문제점이 존재한다.
+
+* 배열과 제네릭이 호환되지 않아 비검사 형변환을 수행해야하고, 컴파일이 깔끔하게 되지 않는다.
+* 배열은 각 인덱스의 의미를 모르기에 출력 결과에 직접 레이블을 달아야 한다. 
+* 정수는 열거 타입과 다르게 타입 안전하지 않기 때문에 정확한 정수값을 사용한다는 것을 개발자가 직접 보증해야 한다. 
+
+
+
+여기서 배열은 실질적으로 열거 타입 상수를 값으로 매핑하는 일을 하기에 `Map`을 사용할 수 있고, 열거 타입을 키로 사용하도록 빠른 map 구현체인 `EnumMap`을 사용하면 된다.
+
+
+
+```java
+public class Plant {
+    enum LifeCycle { ANNUAL, PERENNIAL, BIENNIAL }
+
+    final String name;
+    final LifeCycle lifeCycle;
+
+    public Plant(String name, LifeCycle lifeCycle) {
+        this.name = name;
+        this.lifeCycle = lifeCycle;
+    }
+
+    @Override
+    public String toString() {
+        return name;
+    }
+}
+```
+
+```java
+Map<Plant.LifeCycle, Set<Plant>> plantByLifeCycle = new EnumMap<>(Plant.LifeCycle.class);
+
+for (Plant.LifeCycle lc : Plant.LifeCycle.values()) {
+    plantByLifeCycle.put(lc, new HashSet<>());
+}
+
+for (Plant p : garden) {
+    plantByLifeCycle.get(p.lifeCycle).add(p);
+}
+
+System.out.println(plantByLifeCycle);
+```
+
+위의 기본 코드를 EnumMap으로 리팩토링한 코드이다. 
+
+리팩토링으로 인해 코드가 더 짧고 깔끔해졌으며 더하여 Map을 사용했기에 타입 안정적이고 성능마저 빠르다. 
+
+* 성능이 빠른 이유는 내부적으로 배열을 사용하기 때문이다.
+  * 이러한 구현을 내부로 숨겨 Map의 타입 안전성과 배열의 성능을 모두 얻어냈다. 
+
+
+
+자바 8 이후에는 스트림을 통해서 맵을 관리하여 코드를 더 가독성 좋게 할 수 있다. 단순한 프로그램이라면 상관없지만 맵을 자주 사용할수록 이런 리팩토링은 필수다. 
+
+```java
+System.out.println(Arrays.stream(garden)
+          .collect(Collectors.groupingBy(p -> p.lifeCycle, 
+                  () -> new EnumMap<>(Plant.LifeCycle.class), toSet())));
+```
+
+주의사항은 위의 스트림을 이용한 코드는 `EnumMap`만 사용할 경우와는 다르게 동작한다는 것이다.
+
+* 스트림을 이용한 방식은 내용이 없는 카테고리 즉, **열거타입의 상수에 대해서는 값을 만들지 않는다.**
+
+열거타입 LifeCycle에 3개의 상수가 있다고 할 때, 만약 이중 2개에 해당하는 식물들만 있다면 결과로 나온 `EnumMap`에는 이 두 가지 그룹에 대해서만 만든다. 
+
+
+
+#### 두 열거 타입의 값들을 매핑하느라 ordinal을 (두 번이나) 쓴 배열들의 배열
+
+이는 두 개의 열거 타입을 억지로 매핑하기 위해 ordinal을 두 번이나 쓴 잘못된 방법이다.
+
+##### 문제점
+
+- 컴파일러가 ordinal과 배열 인덱스의 관계를 알 수 없다.
+  - Phase나 Phase.Transition 열거 타입을 수정하면서 표 TRANSITIONS 를 함께 수정하지 않거나 실수로 잘못 수정하면 런타임 오류가 발생할 것이다.
+- `ArrayIndexOutOfBoundsException` 이나 `NullPointerException` 을 던질 수도 있고, 예외없이 의도하지 않도록 동작할 수 있다.
+- 표의 크기는 상태의 가지수가 늘어나면 제곱해서 커지며, null로 채워지는 칸도 늘어날 것이다.
+
+```java
+public enum Phase {
+    SOLID,
+    LIQUID,
+    GAS;
+
+    public enum Transition {
+        MELT,
+        FREEZE,
+        BOIL,
+        CONDENSE,
+        SUBLIME,
+        DEPOSIT;
+
+        private static final Transition[][] TRANSITIONS = {
+                {null, MELT, SUBLIME},
+                {FREEZE, null, BOIL},
+                {DEPOSIT, CONDENSE, null}
+        };
+
+        public static Transition from(Phase from, Phase to) {
+            return TRANSITIONS[from.ordinal()][to.ordinal()];
+        }
+    }
+}
+```
+
+이 코드 역시 EnumMap을 이용하여 리팩토링이 가능하다.
+
+전이 하나를 얻기 위해 이전 상태(from)와 이후 상태(to)가 필요하기 때문에 Map 2개를 중첩하여 쉽게 해결할 수 있다.
+
+- 안쪽 Map은 이전 상태와 TRANSITION 을 연결
+- 바깥 Map은 이후 상태와 안쪽 Map을 연결
+- OuterMap -> 이후 상태 & InnerMap -> 이전 상태 & TRANSITION
+- 전이 전후의 두 상태를 전이 열거 타입 Transition의 입력으로 받아, 이 Transition 상수들로 중첩된 EnumMap을 초기화 한다.
+
+```java
+public enum Phase {
+    SOLID, LIQUID, GAS;
+
+    public enum Transition {
+        MELT(SOLID, LIQUID), FREEZE(LIQUID, SOLID),
+        BOIL(LIQUID, GAS), CONDENSE(GAS, LIQUID),
+        SUBLIME(SOLID, GAS), DEPOSIT(GAS, SOLID);
+
+        private final Phase from;
+        private final Phase to;
+
+        Transition(Phase from, Phase to) {
+            this.from = from;
+            this.to = to;
+        }
+
+        private static final Map<Phase, Map<Phase, Transition>> m = Stream.of(values())
+            .collect(groupingBy(t -> t.from,() -> new EnumMap<>(Phase.class),
+                                toMap(t -> t.to, t -> t, (x, y) -> y, () -> new EnumMap<>(Phase.class))));
+
+        public static Transition from(Phase from, Phase to) {
+            return m.get(from).get(to);
+        }
+    }
+}
+```
+
+여기서 `Map<Phase, Map<Phase, Transition>>` 은 **"이전 상태에서 '이후 상태에서 전이로의 Map' 에 대응시키는 Map"**이라는 뜻이다.
+
+이러한 Map의 Map을 초기화하기 위해 수집기(`java.util.stream.Collector`) 2개를 차례로 사용되었다.
+
+- 첫 번째 수집기인 groupingBy에서는 전이를 이전 상태를 기준으로 묶었다.
+- 두 번째 수집기인 toMap 에서는 이후 상태를 전이에 대응시키는 EnumMap을 생성한다.
+  - 두 번째 수집기의 병합 함수인 (x, y) -> y는 선언만 하고 실제로는 쓰이지 않는다.
+  - 이는 단지 EnumMap을 얻으려면 MapFactory가 필요하고 수집기들은 점층적 팩토리(telescoping factory)를 제공하기 때문이다.
+
+#### 새로운 상태를 추가하는 경우
+
+새로운 상태인 플라즈마(PLASMA) 추가하고 연결된 전이를 생성한다.
+
+- 기체에서 플라즈마로 변하는 이온화(IONIZE)
+- 플라즈마에서 기체로 변하는 탈이온화(DEIONIZE)
+
+그 이후 상태 목록에 `PLASMA`를 추가하고, 전이 목록에 `IONIZE(GAS, PLASMA)`와 `DEIONIZE(PLASMA, GAS)`만 추가하면 끝이다.
+
+```java
+public enum Phase {
+    SOLID, LIQUID, GAS, PLASMA;
+
+    public enum Transition {
+        MELT(SOLID, LIQUID), FREEZE(LIQUID, SOLID),
+        BOIL(LIQUID, GAS), CONDENSE(GAS, LIQUID),
+        SUBLIME(SOLID, GAS), DEPOSIT(GAS, SOLID),
+        // IONIZE, DEIONIZE 추가
+        IONIZE(GAS, PLASMA), DEIONIZE(PLASMA, GAS);
+        
+        ...
+```
+
+enum 두 개를 사용하여 데이터를 조합하여 사용하는 경우 2차원 배열을 사용하는 것보다 EnumMap을 사용하는 것이 **Collectors.groupingBy와 EnumMap의 조합으로 조회가 편리해지고, 성능 면에서도 이점**이 있고, 실제 **내부에서는 Map의 Map이 배열의 배열로 구현되어 낭비되는 공간과 시간도 거의 없이 명확하고 안전**하고 유지보수에 좋다.
 
