@@ -1,4 +1,4 @@
-# Effective Java 5장 열거 타입과 애너테이션
+# Effective Java 5장 열거 타입과 어노테이션
 
 
 
@@ -623,4 +623,160 @@ private static void test(Collection<? extends Operation> opSet, double x, double
 
 
 인터페이스를 이용해 확장 가능한 열거 타입을 내는 방식도 **열거 타입끼리는 구현을 상속할 수 없다**는 문제가 존재한다. 아무 상태에도 의존하지 않으면 디폴트 구현을 이용하여 인터페이스에 추가하는 방법도 있다. 위 예시들처럼 중복량이 적은 코드는 상관없지만 공유하는 기능이 많다면 별도의 도우미 클래스나 정적 도우미 메소드로 분리해서 코드 중복을 없애주어야 한다.
+
+
+
+---
+
+
+
+## Item 39. 명명 패턴보다 애너테이션을 사용하라
+
+프레임워크가 특별히 다뤄야 할 프로그램 요소에는 명확히 구분되는 명명 패턴을 적용해왔다. 하지만 명명 패턴에는 몇 가지 단점이 존재한다.
+
+1. **오타에 취약하다.** 
+   * 예를 들어 테스트 프레임워크 JUnit 3에서는 테스트메서드명을 test로 시작하게 했는데, 실수로 이름을 testSafeOverride가 아니라 tsetSafeOverride로 지어버리면 이 메서드를 무시해버린다. 
+
+ 	2. **올바른 프래그램 요소에서만 사용되리라 보증할 방법이 없다.** 
+     * 메서드가 아닌 클래스명을 TestSafeMechanisms으로 지어 내부의 메서드를 테스트하길 기대할 수 있지만 JUnit은 클래스 이름에는 관심이 없기에 모두 무시해버린다. 
+
+3. **프로그램 요소를 매개변수로 전달할 마땅한 방법이 없다.** 
+   * 특정 예외를 던져야 성공하는 테스트가 있다고 할 때 기대하는 예외 타입을 테스트에 매개변수로 전달해야하는데 방법이 마땅히 없다. 
+
+그래서 `어노테이션`이라는 개념을 JUnit4부터 적용하였다. 어노테이션의 사용은 아래와 같다.
+
+```java
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface CatsbiTest {
+}
+```
+
+어노테이션 선언데 작성된 어노테이션(@Target, @Retention, ...)을 `메타 어노테이션(meta-annotation)`이라 한다.  메타 어노테이션은 어노테이션의 선언에 사용되는 어노테이션을 뜻한다.
+
+여기서 사용한 `@Retention`어노테이션은 어노테이션의 스코프를 결정하고, `@Target`은 어노테이션이 적용될 대상을 결정한다.
+
+```java
+public class Sample{
+		@CatsbiTest public static void m1(){ } //성공해야 한다.
+		public static void m2() { }
+		@CatsbiTest public static void m3() { //실패해야 한다.
+				throw new RuntimeException("실패");
+		}
+		@CatsbiTest public void m5(){ } //정적 메서드가 아니다.
+		public static void m6(){ }
+		@CatsbiTest public static void m7(){ //실패해야 한다.
+				throw new RuntimeException("실패");
+		}
+		public static void m8(){ }
+
+}
+```
+
+어노테이션을 이용한 프로그램의 예시이다. `@Test` 어노테이션 붙지 않은 m2, m6, m8 메서드는 무시되고, m5 메서드는 정적 메서드가 아니라 인스턴스 메서드이기에 `@Test`를 잘못 사용했다. m3, m7은 예외를 던지기에 실패한다. 
+
+Sample 클래스에 `@Test` 어노테이션을 통해 성공하는 메서드, 실패하는 메서드, 무시되는 메서드까지 작성을 해봤다. 명명 패턴과는 다르게 메서드명을 어떻게 작성하던 `@Test` 어노테이션을 붙혀주면 테스트 대상이 된다. 어노테이션을 실수로 `@Tset`이라 오타를 낸다 하더라도 컴파일러에서 에러를 잡아주기 때문에 오타로 인한 실수도 없다. `@Test` 어노테이션이 코드에 직접적인 영향을 주진 않지만, 이 어노테이션에 관심있는 프로그램에게 추가 정보를 제공한다. 즉, 어노테이션이 사용된 코드를 그대로 둔 채 이 어노테이션에 관심있어 하는 도구에서 특별한 처리를 할 기회를 준다는 것이다.
+
+```java
+public class RunTests {
+    public static void main(String[] args) throws Exception {
+        int tests = 0;
+        int passed = 0;
+        Class<?> testClass = Class.forName(args[0]);
+        for (Method m : testClass.getDeclaredMethods()) {
+            if (m.isAnnotationPresent(CatsbiTest.class)) {
+                tests++;
+                try {
+                    m.invoke(null);
+                    passed++;
+                } catch (InvocationTargetException wrappedExc) {
+                    Throwable exc = wrappedExc.getCause();
+                    System.out.println(m + " 실패: " + exc);
+                } catch (Exception exc) {
+                    System.out.println("잘못 사용한 @Test: " + m);
+                }
+            }
+        }
+        System.out.printf("성공: %d, 실패: %d%n", passed, tests - passed);
+    }
+}
+```
+
+위에 코드를 보면 테스트 메서드가 예외를 던지면 리플렉션 메커니즘이 `InvocationTargetExcxeption`으로 감싸 다시 던진다. 이 메서드에서는 던져진 `InvocationTargetException`안에 담긴 원래 예외를 추출해 출력한다. 
+
+이 코드가 정상적으로 동작하지만 테스트의 목적에는 성공 뿐만 아니라 **예외를 의도하는 테스트도 있을 수 있다.** 이를 테스트 하기위해서는 이 코드로는 부족하다.
+
+```java
+public class Sample2 {
+    @ExceptionTest(ArithmeticException.class)
+    public static void m1() {
+        int i = 0;
+        i = i / i;
+    }
+
+    @ExceptionTest(ArithmeticException.class)
+    public static void m2() {
+        int[] ints = new int[0];
+        int i = ints[0];
+    }
+
+    @ExceptionTest(ArithmeticException.class)
+    public static void m3() {}
+}
+```
+
+그런 경우 이 어노테이셔을 다룰 수 있도록 사용하면 된다.
+
+```java
+public class RunExceptionTests {
+    public static void main(String[] args) throws Exception{
+        int tests = 0;
+        int passed = 0;
+        Class<?> testClass = Class.forName(args[0]);
+        for (Method m : testClass.getDeclaredMethods()) {
+            if (m.isAnnotationPresent(ExceptionTest.class)) {
+                tests++;
+                try {
+                    m.invoke(null);
+                } catch (InvocationTargetException wrappedExc) {
+                    Throwable exc = wrappedExc.getCause();
+                    Class<? extends Throwable> excType = m.getAnnotation(ExceptionTest.class).value();
+                    if (excType.isInstance(exc)) {
+                        passed++;
+                    }
+                } catch (Exception e) {
+                    System.out.println("잘못 사용한 테스트 @Test : " + m);
+                }
+            }
+        }
+        System.out.printf("성공: %d, 실패: %d%n", passed, tests - passed);
+    }
+}
+```
+
+`@Test`어노테이션용 코드와 비슷하지만 이 코드는 올바른 예외를 던지는지 확인하는데 사용한다. 만약 해당 예외의 클래스파일이 컴파일타임엔 존재하나 런타임에는 존재하지 않을 수 있는데 이러한 경우에는 테스트 러너가 `TypeNotPresentException`을 던진다. 
+
+만약 예외가 여러 개인 경우에는 두 가지 방법이 있다.
+
+1. **배열 사용하기**
+
+단일 원소 배열에 최적화했지만 앞서 작성했던 `@ExceptionTest`처럼 기존의 단일 매개변수 선언도 수정없이 모두 수용이 된다. 
+
+배열 매개변수를 받는 애너테이션 문법은 아주 유연해서 사용하기도 아주 편하다.
+
+2. **`@Repeatable`메타 어노테이션을 활용하는 방법**
+
+@Repeatable 어노테이션을 단 어노테이션은 하나의 프로그램 요소에 여러 번 달 수 있다. 사용하기 위해선 어노테이션을 반환하는 컨테이너 어노테이션을 하나 더 정의하고 `@Repeatable`에 이 컨테이너 어노테이션의 클래스 객체를 전달해야 한다.
+
+컨테이너 어노테이션은 내부 어노테이션 타입의 배열을 반환하는 value 메서드를 정의해야 한다. 
+
+그리고 적절한 보존정책(@Retention)과 적용 대상(@Target)을 명시해야 한다. 
+
+
+
+반복 가능 어노테이션을 사용해 하나의 프로그램 요소에 같은 어노테이션을 여러 번 달 대의 코드가독성을 높일 수 있다. 하지만 어노테이션을 선언하고 이를 처리하는 부분에서는 코드가 증가하게 된다.
+
+**어노테이션을 이용해서 처리할 수 있는 일을 명명패턴으로 처리할 이유는 없고, 자바 프로그래머라면 예외없이 자바가 제공하는 어노테이션 타입들을 사용해야 한다.**
+
+
 
