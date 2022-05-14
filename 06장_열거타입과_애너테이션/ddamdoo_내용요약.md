@@ -500,3 +500,127 @@ public enum Phase {
 
 enum 두 개를 사용하여 데이터를 조합하여 사용하는 경우 2차원 배열을 사용하는 것보다 EnumMap을 사용하는 것이 **Collectors.groupingBy와 EnumMap의 조합으로 조회가 편리해지고, 성능 면에서도 이점**이 있고, 실제 **내부에서는 Map의 Map이 배열의 배열로 구현되어 낭비되는 공간과 시간도 거의 없이 명확하고 안전**하고 유지보수에 좋다.
 
+
+
+---
+
+
+
+## Item 38. 확장할 수 있는 열거 타임이 필요하면 인터페이스를 사용하라
+
+열거 타입은 대부분의 상황에서 타입 안전 열거 패턴보다 우수하다. 하지만 타입 안전 열거 패턴은 확장이 가능하지만 **열거 타입은 확장이 불가능하다.**
+
+대부분 상황에서 열거 타입을 확장하려는 시도가 좋은 생각은 아니다. 확장 타입 원소는 기반 타입 원소로 취급되지만 반대의 경우는 성립하지도 않고, 기반타입과 확장타입 원소를 모두 순회할 방법도 없다. 그리고 확장성을 높히려고 할 때 고려할 설계와 구현이 너무 복잡해진다. 
+
+하지만 연산코드를 확장할 수 있는 열거타입이 어울린다. 연산 코드의 각 원소는 특정 기계가 수행하는 연산을 의미하는데 이따금 API가 제공하는 기본 연산 외에 사용자 확장 연산을 추가할 수 있도록 해야 하는 경우가 있다.
+
+이 때 열거 타입은 **인터페이스를 구현해서 확장한다.** 연산 코드용 인터페이스를 정의한 뒤 열거 타입에서 이 인터페이스를 구현하게 하면 된다.
+
+```java
+public interface Operation {
+    double apply(double x, double y);
+}
+```
+
+이러한 인터페이스를 작성한 후, 아래에 기본 연산을 정의해준다.
+
+```java
+public enum BasicOperation implements Operation {
+    PLUS("+") {
+        @Override
+        public double apply(double x, double y) { return x + y; }
+    },
+    MINUS("-") {
+        @Override
+        public double apply(double x, double y) { return x - y; }
+    },
+    TIMES("*") {
+        @Override
+        public double apply(double x, double y) { return x * y; }
+    },
+    DIVIDE("/") {
+        @Override
+        public double apply(double x, double y) { return x / y; }
+    };
+
+    private final String symbol;
+
+    BasicOperation(String symbol) {
+        this.symbol = symbol;
+    }
+
+    @Override
+    public String toString() { return symbol; }
+}
+```
+
+그 이후 추가적으로 확장이 필요한 코드를 작성하면 된다.
+
+```java
+public enum ExtendedOperation implements Operation {
+    EXP("^") {
+        @Override
+        public double apply(double x, double y) { return Math.pow(x, y); }
+    },
+    REMAINDER("%") {
+        @Override
+        public double apply(double x, double y) { return x % y; }
+    };
+
+    private final String symbol;
+
+    ExtendedOperation(String symbol) {
+        this.symbol = symbol;
+    }
+    
+    @Override
+    public String toString() { return symbol; }
+}
+```
+
+이렇게 구현한 인터페이스와 열거 타입은 이제 열거타입에서 따로 추상 메서드를 선언하지 않아도 된다. 개별 인스턴스 수준에서 뿐만 아니라 타입 수준에서도 기본 열거 타입 대신 확장된 열거 타입을 넘겨 확장된 열거 타입의 원소 모두를 사용하게 할 수도 있다. 이러한 방식을 이용하는 것은 크게 두 가지가 있다.
+
+#### 한정적 타입 토큰
+
+```java
+public static void main(String[] args) {
+    double x = Double.parseDouble(args[0]);
+    double y = Double.parseDouble(args[1]);
+    test(ExtendedOperation.class, x, y);
+}
+
+private static <T extends Enum<T> & Operation> void test(
+    Class<T> opEnumType, double x, double y) {
+    for (Operation op : opEnumType.getEnumConstants()) {
+        System.out.printf("%f %s %f = %f%n", x, op, y, op.apply(x, y));
+    }
+}
+```
+
+이 코드는 test 메서드에 인수로 ExtendedOperation의 class 리터럴을 넘겨 이를 이용한 방법이다. 
+
+`<T extends Enum<T> & Operation>` 매개변수의 선언은 Class 객체가 열거타입인 동시에 Operation 인터페이스의 구현체여야 한다는 의미다. 
+
+
+
+#### 한정적 와일드카드 타입
+
+```java
+public static void main(String[] args) {
+    double x = 4, y = 2;
+    testV2(Arrays.asList(ExtendedOperation.values()), x, y);
+}
+
+private static void test(Collection<? extends Operation> opSet, double x, double y) {
+    for (Operation op : opSet) {
+        System.out.printf("%f %s %f = %f%n", x, op, y, op.apply(x, y));
+    }
+}
+```
+
+인수로 `Collection<? extends Operation>` 타입의 한정적 와일드카드 타입을 넘기는 방식이다. 한정적 타입 토큰 방식에 비해 코드가 덜 복잡하고  test 메소드도 더 유연해졌다. 하지만 **특정 연산에서 EnumMap이나 EnumSet을 사용할 수 없다**는 단점이 있다.
+
+
+
+인터페이스를 이용해 확장 가능한 열거 타입을 내는 방식도 **열거 타입끼리는 구현을 상속할 수 없다**는 문제가 존재한다. 아무 상태에도 의존하지 않으면 디폴트 구현을 이용하여 인터페이스에 추가하는 방법도 있다. 위 예시들처럼 중복량이 적은 코드는 상관없지만 공유하는 기능이 많다면 별도의 도우미 클래스나 정적 도우미 메소드로 분리해서 코드 중복을 없애주어야 한다.
+
