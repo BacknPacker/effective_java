@@ -65,7 +65,7 @@ public class Point {
     // private
     private double x;
     private double y;
-
+    
     // getter, setter
     public double getX() { return x; }
     public double getY() { return y; }
@@ -517,3 +517,8 @@ public class Main {
 **_추상화의 기본 단위인 클래스와 인터페이스는 자바 언어의 심장과도 같다._** <br>
 **_그래서 자바 언어에는 클래스와 인터페이스 설계에 사용하는 강력한 요소가 많이있다._** <br>
 **_이번한 요소를 적절히 활용하여 클래스와 인터페이스를 쓰기 편하고, 견고하며, 유연하게 만들자._** <br>
+
+
+<br>
+
+> Joshua Bloch, 『Effective Java 3/E』, 개앞맵시 옮김, 프로그래밍인사이트(2018), p95-152.

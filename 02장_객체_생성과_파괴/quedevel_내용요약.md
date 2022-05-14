@@ -23,7 +23,7 @@ class Member {
 #### 2️⃣ 호출될 때마다 인스턴스를 새로 생성하지는 않아도 된다.
 ```java
 public static Boolean valueOf(boolean bololean){
-    return b Boolean.TRUE : Boolean.FALSE;
+  return b Boolean.TRUE : Boolean.FALSE;
 }
 ```
 + 인스턴스를 미리 만들어 놓거나 새로 생성한 인스턴스를 캐싱하여 재활용하는식으로 불필요한 객체 생성을 피할 수 있다.
@@ -319,3 +319,8 @@ static void copy(String src, String dst) throws IOException {
 
 ## ⭐ 결론
 불필요한 자원 생성을 피하고, 메모리 누수, 자원 회수 등에 대한 예방법을 활용하자!
+
+
+<br>
+
+> Joshua Bloch, 『Effective Java 3/E』, 개앞맵시 옮김, 프로그래밍인사이트(2018), p8-50.
