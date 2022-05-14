@@ -780,3 +780,76 @@ public class RunExceptionTests {
 
 
 
+---
+
+
+
+## Item 40. @Override 애너테이셔을 일관되게 사용하라
+
+`@Override`어노테이션을 일관되게 사용하면 다양한 버그들을 예방해준다. 
+
+```java
+public class Bigram {
+    private final char first;
+    private final char second;
+
+    public Bigram(char first, char second) {
+        this.first = first;
+        this.second = second;
+    }
+    
+    public boolean equals(Bigram b) {
+        return b.first == first && b.second == second;
+    }
+    
+    public int hashCode() {
+        return 31 * first + second;
+    }
+}
+```
+
+```JAVA
+public static void main(String[] args) {
+    Set<Bigram> s = new HashSet<>();
+    for (int i = 0; i < 10; i++) {
+        for (char ch = 'a'; ch <= 'z'; ch++) {
+            s.add(new Bigram(ch, ch));
+        }
+    }
+
+    System.out.println("s.size() = " + s.size());
+}
+```
+
+이 코드를 실행하였을 때 26이라는 기대값을 가지고 있지만 실제로 출력해보게 되면 260이라는 결과값이 나오게 된다. 
+
+Set은 중복을 허용하지 않기 위해 Object 객체에서 선언한 equals, hashCode를 이용한다.  그리고 우리가 볼때 Bigram은 두 메서드도 구현을 해두었지만 Bigram의 equals는 오버라이딩이 아니라 **오버로딩**이기 때문이다.
+
+Object의 equals 메서드는 매개변수로 Object 타입을 받는다. 즉 Bigram의 equals는 매개변수 타입이 다르기 때문에 이는 재정의가 아닌 다중정의가 된 것이고, Set에서는 Object의 equals를 사용했는데 해당 로직은 객체 식별성만을 비교하기에 모두 다른 객체로 인식한 것이다. 
+
+```java
+public class Bigram {
+    private final char first;
+    private final char second;
+
+    public Bigram(char first, char second) {
+        this.first = first;
+        this.second = second;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Bigram)) return false;
+        Bigram bigram = (Bigram) o;
+        return first == bigram.first && second == bigram.second;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(first, second);
+    }
+}
+```
+
+위 코드를 이처럼 `@Override`어노테이션을 이용하면 의도한대로 26이라는 결과값을 얻을 수 있다. 우리는 **상위 클래스의 메서드를 재정의하려는 모든 메서드에 @Override 애너테이션을 달아야 한다.** 예외 상황으로는 구체 클래스에서 상위 클래스의 추상 메서드를 재정의하는 경우에는 재정의가 강제되기 때문에 굳이 `@Override` 어노테이션을 달아주지 않아도 무관하다. 
