@@ -145,3 +145,8 @@ public class Item14 implements Comparable<Item14> {
 ## ⭐ 결론
 **_Object에서 final이 아닌 메서드는 모두 재정의를 염두에 두고 설계가 되었지만...<br>
 반드시 각각의 규약 따라서 재정의 할 수 있도록한다._**
+
+
+<br>
+
+> Joshua Bloch, 『Effective Java 3/E』, 개앞맵시 옮김, 프로그래밍인사이트(2018), p51-94.
