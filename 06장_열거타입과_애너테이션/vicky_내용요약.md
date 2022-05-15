@@ -372,6 +372,9 @@ public enum ExtendedOperation implements Operation {
     }
 }
 ```
+##### 열거타입끼리 구현을 상속할 수 없다는 점
+  + BasicOperation과 ExtendedOperation 모두에 연산 기호를 저장하고 찾는 기능이 들어가야 한다.
+  + 공통 메서드들이 많다면 도우미 클래스나 정적 도우미 메서드로 코드 중복을 없애자.
 
 <br><hr><br>
 
@@ -392,15 +395,61 @@ public enum ExtendedOperation implements Operation {
 @Target(ElementType.METHOD)
 public @interface Test{}
 ```
-+ @Retention과 @Target은 매타에너테이션으로 애너테이션 선언에 다는 애너테이션
-
-##### 반복 가능 애너테이션
++ @Retention과 @Target은 매타 에너테이션으로 애너테이션 선언에 다는 애너테이션
++ 컴파일러 강제를 위해서는 애너테이션 처리기 구현 필요, javax.annotation.processing API 참조
++ @Test 사용이 잘못된 경우, InvocationTargetException 예외 발생
+```java
+// 테스트 마커 애너테이션이 달린 메서드를 차례로 호출
+m.isAnnotationPresent(Test.class)
+```
+##### 매개변수가 있는 애너테이션
 ```java
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-@Repeatable(ExceptionTestContainer.class)
 public @interface ExceptionTest {
-    Class<? extends Throwable> value();
+  // Throwable을 확장한 클래스 객체로, 모든 예외 타입을 수용
+  Class<? extends Throwable> value();
+}
+```
+##### 배열 매개변수를 받는 애너테이션
++ 단일 원소 배열에 최적화했지만, 앞서의 @ExceptionTest들도 모두 수정 없이 수용한다.
+```java
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface ExceptionTest {
+    Class<? extends Throwable>[] value();
+}
+```
+```java
+public class RunTests {
+    @ExceptionTest({IndexOutOfBoundsException.class, NullPointerException.class})
+    public static void doublyBad() { // 성공해야 한다.
+        List<String> list = new ArrayList<>();
+
+        // 자바 API 명세에 따르면 다음 메서드는 IndexOutOfBoundsException이나 NullPointerException을 던질 수 있다.
+        list.addAll(5, null);
+    }
+}
+```
+##### 반복 가능 애너테이션
++ Java 8 이상, 여러 개의 값을 받는 애너테이션
++ 사용시 주의점
+  1. @Repeatable을 단 애너테이션을 반환하는 컨테이너 애너테이션을 정의
+  2. 이 컨테이너 애너테이션의 class 객체를 매개변수로 전달해야 한다.
+  3. 내부 애너테이션 타입의 배열을 반환하는 value 매서드를 정의해야 한다.
+  4. 컨테이너 에너테이션 타입에는 적절한 보존 정책(@Retention)과 적용 대상(@Target)을 명시해야 한다.
+```java
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+@Repeatable(ExceptionContainer.class)
+public @interface ExceptionTest {
+  Class<? extends Throwable> value();
+}
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface ExceptionContainer {
+  MadExceptionTest[] value();
 }
 ```
 
