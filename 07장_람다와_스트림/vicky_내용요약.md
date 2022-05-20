@@ -88,6 +88,9 @@ public enum OperationLambda {
 
 ## 아이템 43. 람다보다는 메서드 참조를 사용하라.
 ### 메서드 참조
++ [생성방법 예시](https://countryxide.tistory.com/127)
++ 람다표현식이 단 하나의 메서드만 호출하는 경우에 람담 표현식에서 불필요한 매개변수를 제거하고 사용할 수 있게 해준다.
++ 메서드를 호출하는 것이 아니라 언제든지 호출할 수 있도록 참조
 + 더 간결하게 표현할 수 있지만 메서드명이 긴 경우에는 람다가 더 적합할 수도 있다.
 ```java
 public class Freq {
@@ -118,11 +121,74 @@ public class Freq {
 >
 > map.merge(key, msg, String::concat)
 ### 💡 결론
-+ 매개변수의 이름 자체가 프로그래머의 좋은 가이드가 되기도 할때에는 메소드 참조보다 람다가 가독성도 좋고 유지보수도 쉽다.
-+ 람다로도 못한다면 메소드참조로도 할 수 없다.
++ 매개변수의 이름 자체가 프로그래머의 좋은 가이드가 되기도 할때에는 메서드 참조보다 람다가 가독성도 좋고 유지보수도 쉽다.
++ 람다로도 못한다면 메서드참조로도 할 수 없다.
++ 제네릭 함수타입을 구현하려고 하는 경우에는 메서드 참조를 사용하자.
 
+<br><hr><br>
 
+## 아이템 44. 표준 함수형 인터페이스를 참조하라
+### 자바에서 제공하는 표준 함수형 인터페이스, @FunctionalInterface
+##### UnaryOperator
+> Returns a unary operator that always returns its input argument.
++ 입력 타입과 리턴 타입이 동일
+```java
+UnaryOperator<String> uo = (x)->x*x;
+System.out.println("UnaryOperator test ="+ uo.apply(5));    // 25
+```
+##### BinaryOperator
++ 두 인자를 넣었을 때 같은 타입의 객체를 반환
+```java
+BinaryOperator<Integer> binaryOperator = (n1, n2) -> n1 + n2;
+System.out.println(binaryOperator.apply(10, 100));   // 110
+``` 
+##### Predicate
++ and, isEqual, negate, not, or, test
++ 하나의 인자를 받아 boolean 타입으로 반환
+```java
+Predicate<Integer> predicate = (num) -> num > 10;
+boolean result = predicate.test(100);
+System.out.println(result);  // TRUE
+```
+##### Function
++ Function<T, R> 인자(T)와 반환타입(R)이 다르다.
+```java
+Function<Integer, Integer> multiply = (value) -> value * 2;
+Integer result = multiply.apply(3);
+System.out.println(result); // 6
+```
+##### Supplier
+> There is no requirement that a new or distinct result be returned each time the supplier is invoked.
++ 인수를 받지 않고 값을 반환하는 함수
+```java
+Supplier<String> helloSupplier = () -> "A ";
+System.out.println(helloSupplier.get() + "B"   //AB
+```
+##### Consumer
+> Represents an operation that accepts a single input argument and returns no result. Unlike most other functional interfaces, Consumer is expected to operate via side-effects.
++ 인수를 받고, 반환값은 없는 함수
++ accept, andThen
+```java
+Consumer<String> consumer = s -> System.out.println(s.toUpperCase());
+consumer.accept("test");  // TEST
+```
+### 표준 함수형 인터페이스 사용시 주의점
++ 서로 다른 함수형 인터페이스를 같은 위치의 인수로 받는 메서드들을 다중 정의해서는 안된다.
+```java
+@Test
+void name() {
+    ExecutorService executorService = Executors.newSingleThreadExecutor();
 
+    //형변환이 없으면 컴파일 에러를 뱉는다.
+    executorService.submit((Runnable) System.out::println);
 
+    //람다는 가능
+    executorService.submit(() -> 1);
+    executorService.submit(() -> {});
+}
 
+https://javabom.tistory.com/86
+```
+
+<br><hr><br>
 
