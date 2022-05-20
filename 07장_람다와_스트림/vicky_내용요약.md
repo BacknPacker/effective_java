@@ -76,6 +76,7 @@ public enum OperationLambda {
     }
 }
 ```
+### 💡 결론
 ##### 람다가 대체 할 수 없는것
 + 추상클래스의 인스턴스를 만들때 람다사용은 불가능하다.
 + 추상메서드가 여러 개인 인터페이스의 인스턴스도 람다로 표현 불가능하다.
@@ -84,3 +85,44 @@ public enum OperationLambda {
 + 직렬화해야만 하는 함수객체가 있다면 private 정적 중첩 클래스의 인스턴스를 사용하자.  
 
 <br><hr><br>
+
+## 아이템 43. 람다보다는 메서드 참조를 사용하라.
+### 메서드 참조
++ 더 간결하게 표현할 수 있지만 메서드명이 긴 경우에는 람다가 더 적합할 수도 있다.
+```java
+public class Freq {
+    public static void main(String[] args) {
+        Map<String, Integer> frequencyTable = new TreeMap<>();
+        Map<String, Integer> frequencyTable2 = new TreeMap<>();
+
+        List<String> list = List.of("A","B","C","A");
+
+        for (String s : list)
+            frequencyTable.merge(key, 1, (count, incr) -> count + incr); // 람다
+            frequencyTable2.merge(key, 1, Integer::sum); // 메서드 참조
+            
+        System.out.println(frequencyTable);
+        System.out.println(frequencyTable2);
+    }
+}
+```
+```java
+{A=2, B=1, C=1}
+{A=2, B=1, C=1}
+```
+> Map.merge()
+>
+> default V merge(K key, V value, BiFunction<? super V,? super V,? extends V> remappingFunction)
+>
+>If the specified key is not already associated with a value or is associated with null, associates it with the given non-null value. Otherwise, replaces the associated value with the results of the given remapping function, or removes if the result is null. This method may be of use when combining multiple mapped values for a key. For example, to either create or append a String msg to a value mapping:
+>
+> map.merge(key, msg, String::concat)
+### 💡 결론
++ 매개변수의 이름 자체가 프로그래머의 좋은 가이드가 되기도 할때에는 메소드 참조보다 람다가 가독성도 좋고 유지보수도 쉽다.
++ 람다로도 못한다면 메소드참조로도 할 수 없다.
+
+
+
+
+
+
