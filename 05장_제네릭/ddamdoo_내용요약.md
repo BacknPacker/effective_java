@@ -14,7 +14,7 @@
 | 재귀적 타입 한정         | recursive type bound    | `<T extends Comparable<T>>`        |
 | 한정적 와일드카드 타입   | bounded wildcard type   | `List<? extends Number>`           |
 | 제네릭 메소드            | generic method          | `static <E> List<E> asList(E[] a)` |
-| 타입 토큰                | type token              | String.class                       |
+| 타입 토큰                | type token              | `String.class`                     |
 
 
 
@@ -32,11 +32,11 @@
 이전의 사용했던 컬렉션의 로 타입은 컴파일하자마자 오류가 발생하지 않기 때문에 오류가 발생하고 해결하기 위해서는 상당히 많은 코드들을 거슬러 올라가야 하지만 제네릭을 활용하면 컴파일 시에 오류가 발생했음을 알 수 있다.
 
 ```java
-private final Collection stamp = ;
+private final Collection stamp = ...;
 ```
 
 ```java
-private final Collection<Stamp> stamp = ;
+private final Collection<Stamp> stamp = ...;
 ```
 
 
@@ -119,7 +119,7 @@ static int numElementsInCommon(Set<?> s1, Set<?> s2){}
 
 ## Item 27. 비검사 경고를 제거하라
 
-제네릭을 사용하면서 주로 나오는 경고
+#### 제네릭을 사용하면서 주로 나오는 경고
 
 * 비검사 형변환 경고
 * 비검사 메소드 호출 경고
