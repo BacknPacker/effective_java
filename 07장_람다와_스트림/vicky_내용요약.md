@@ -89,7 +89,7 @@ public enum OperationLambda {
 ## 아이템 43. 람다보다는 메서드 참조를 사용하라.
 ### 메서드 참조
 + [생성방법 예시](https://countryxide.tistory.com/127)
-+ 람다표현식이 단 하나의 메서드만 호출하는 경우에 람담 표현식에서 불필요한 매개변수를 제거하고 사용할 수 있게 해준다.
++ 람다표현식이 단 하나의 메서드만 호출하는 경우에 람다 표현식에서 불필요한 매개변수를 제거하고 사용할 수 있게 해준다.
 + 메서드를 호출하는 것이 아니라 언제든지 호출할 수 있도록 참조
 + 더 간결하게 표현할 수 있지만 메서드명이 긴 경우에는 람다가 더 적합할 수도 있다.
 ```java
@@ -325,3 +325,28 @@ public class PowerSet {
 + 반면, 가변 축소를 수행하는 Stream의 collect 메서드는 병렬화에 적합하지 않다.
 ### 결론
 + 계산도 올바로 수행하고 성능도 빨라질 거라는 확신 없이는 스트림 파이프라인 병렬화는 시도조차 하지 말라. 
+
+<br><hr><br>
+
+## 강의내용
+### 아이템 42. 익명 클래스보다는 람다를 사용하라
++ 람다는 intelliJ에서 변환을 안내해준다.
++ 람다를 사용하면, 리팩토링에도 유용한 역할을 한다.
+```java
+Collections.sort(words, Comparator.comparingInt(s->s.length));
+Collections.sort(words, Comparator.comparingInt(String::length));
+words.sort(Comparator.comparingIng(String::length));
+```
+### 아이템 43. 람다보다는 메서드 참조를 사용하라
++ 메서드 참조는 람다의 간단명료한 대안이 될 수 있다. 메서드 참조 쪽이 짥고 명확하면 메서드 참조를 쓰고, 그렇지 않을 때만 람다를 사용하라.
+```java
+service.excute(GoshThisClassNameIsHumongous::action);
+service.excute(()->action);
+```
+### 아이템 44. 표준 함수형 인터페이스를 사용하라.
++ @FuntionalInterface
++ API를 설계할 때 람다를 고려하라.
++ 43개 인터페이스를 외우지 말고, 6개의 동작방식면 이해하고 있다면, 나머지는 유추가능하다.
+
+
+
