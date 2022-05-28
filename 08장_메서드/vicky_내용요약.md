@@ -4,7 +4,7 @@
 ## 아이템 49. 매개변수가 유효한지 검사하라
 + 매개변수의 유효성은 실행 전 검사되어야 한다.
 + 단언문을 사용하면 특별한 에러를 나타내지 않지만 vm 옵션을 주면 에러를 보여준다.
-##### null 여부를 검사하는 메서드
+#### null 여부를 검사하는 메서드
 ```java
  public Foo(Bar bar) {
      this.bar = Objects.requireNonNull(bar);
@@ -83,12 +83,105 @@ public Date end() {
 <br><hr><br>
 
 ## 아이템 51. 메서드 시그니처를 신중히 설계하라
-+
+#### 1. 메서드 명명규칙 -> 아이템 68
+#### 2. 불필요한 편의메서드를 만들지 말자.
+#### 3. 매개변수 목록을 짧게 유지하자.
++ 여러 매서드로 나눈다.
++ 매개변수 여러 개를 묶어주는 도우미 클래스를 만들어준다.
++ 빌더 패턴을 메서드 호출에 응용한다.
+  + 모든 매개변수를 하나로 추상화한 객체를 정의하고 클라이언트에서 필요한 객체의 setter메서드만 호출해서 값을 설정한다.
+#### 4. 매개변수 타입으로는 클래스보다 인터페이스가 낫다. -> 아이템 64
+#### 5. boolean보다는 원소 2개짜리 열거타입이 낫다.
++ 메서드 이름상 boolean으로 받는 것이 명백한 경우는 제외.
++ 온도계 사례) Thermometer.newInstance(TemperatureScale.CELSIUIS)
+  + 이렇게 하는 일을 명확하게 표현하는 것이 더 낫기 때문
 
 <br><hr><br>
 
 ## 아이템 52. 다중정의는 신중히 사용하라
-+
+### 다중정의(overloading)를 피하는 방법
+#### 1. instanceof를 이용한 인자값 확인
++ 다중정의된 메서드의 호출결과는 런타임시에 정해진다.
+```java
+public class CollectionClassifier {
+    // 사례1. classify를 호출했을 때 모두 '그 외'라는 결과가 나온다.
+    public static String classify(Set<?> s) {
+        return "집합";
+    }
+    public static String classify(List<?> lst) {
+        return "리스트";
+    }
+    public static String classify(Collection<?> c) {
+        return "그 외";
+    }
+    
+    // 사례2. classified를 호출했을 때 '집합','리스트','그 외'의 결과가 모두 나온다.
+    // instanceof를 이용한 인자값 확인
+    public static String classified(Collection<?> c) {
+        return c instanceof Set ? "집합" :
+                c instanceof List ? "리스트" : "그 외";
+    }
+
+
+    public static void main(String[] args) {
+        Collection<?>[] collections = {
+                new HashSet<String>(),
+                new ArrayList<BigInteger>(),
+                new HashMap<String, String>().values()
+        };
+
+        for (Collection<?> c : collections)
+            System.out.println(classify(c)); // 사례1
+            System.out.println(classified(c)); // 사례2
+    }
+}
+```
+#### 2. 메서드 이름을 다르게 한다.
++ ObjectInputStream read 메서드 
+```java
+public void writeBoolean(boolean val) throws IOException {
+  bout.writeBoolean(val);
+}   
+public void writeByte(int val) throws IOException  {
+  bout.writeByte(val);
+}
+public void writeShort(int val)  throws IOException {
+  bout.writeShort(val);
+}
+public void writeChar(int val)  throws IOException {
+  bout.writeChar(val);
+}
+```
+#### 3. 매개변수 형변환을 통해 기대한 함수가 호출되도록 한다.
+```java
+public static void main(String[] args) {
+    Set<Integer> set = new TreeSet<>();
+    List<Integer> list = new ArrayList<>();
+
+    for (int i = -3; i < 3; i++) {
+        set.add(i);
+        list.add(i);
+    }
+    for (int i = 0; i < 3; i++) {
+        set.remove(i);
+        list.remove(i);        
+    }
+    System.out.println(set + " " + list);  // [-3, -2, -1] [-2, 0, 2]
+}
+```
++ set에서는 실제 정수 값을 제거했고, list는 인덱스를 제거했다.
++ ArrayList에서 remove를 다중정의 했기 때문에 set과 list의 결과가 다르게 나타나는 것을 알 수 있다.
++ set과 같은 결과가 출력되기 위해서는 list.remove((Integer) i)로 해서 Object를 매개변수로 갖는 remove가 호출될 수 있게 해야 한다.
+
+> public E remove(int index) <br>
+> Removes the element at the specified position in this list. Shifts any subsequent elements to the left (subtracts one 
+> from their indices).
+
+> public boolean remove(Object o)
+> Removes the first occurrence of the specified element from this list, if it is present. If the list does not contain the > element, it is unchanged. More formally, removes the element with the lowest index i such that Objects.equals(o, get(i)) > (if such an element exists). Returns true if this list contained the specified element (or equivalently, if this list 
+> changed as a result of the call).
+
+##### 제네릭과 오토박싱을 더한 결과 List 인터페이스가 취약해졌다.
 
 <br><hr><br>
 
