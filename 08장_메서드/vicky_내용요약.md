@@ -222,9 +222,60 @@ public List<Cheese> getCheese(){
 <br><hr><br>
 
 ## 아이템 55. 옵셔널 반환은 신중히 하라
-+
++ 반환값이 없는 경우 과거에는 예외를 던지거나 null을 반환했다.
+  + 예외를 생성하는 경우 스택 추적 전체를 캡쳐하므로 비용이 적지 않았다.
+  + NullPointerException 발생할 경우를 고려해야 했다.
+### Optional<T>
++ null이 아닌 T타입 참조를 하거나 아무것도 담지 않을 수 있다. 
++ 옵셔널은 원소를 최대 1개 가질 수 있는 '불변'컬렉션이다.
++ 예외를 던지는 메서드보다 유연하고 사용하기 쉬우며, null을 반환하는 메서드보다 오류 가능성이 적다.
+```java
+public static <E extends Comparable<E>> Optional<E> max(Collection<E> c) {
+   if (c.isEmpty())
+   		return Optional.empty();  // 빈 옵셔널
+        
+   E result = null;
+   for (E e : c)
+   		if(result==null||e.compareTo(result) > 0)
+        	result = Objects.requireNonNull(e);
+            
+   return Optional.of(result);  // 값이 있는 옵셔널
+}
+```
++ Optional.of(value) value 값에 null을 넣으면 NullPointerException을 던진다.
++ null 값도 허용하는 옵셔널을 만들려면 Optional.ofNullable(value)를 사용하자.
+### 옵셔널 반환 활용
+```java
+// orElse
+String lastWordInLexicon = max(words).orElse("단어 없음...");
+
+// orElseThrow
+Toy myToy = max(toys).orElseThrow(TemperTantrumException::new);
+
+// get
+// 값이 없을 경우에는 NoSuchEElementException이 발생
+Element lastNobleGas = max(Elements.NOBLE_GASES).get();
+```
+### 옵셔널 사용의 주의점
++ 박싱된 기본 타입을 담은 옵셔널을 반환하는 일은 없도록 하자
+  + OptionalInt, OptionalLong, OptionalDouble
+#### Optional을 사용하면 안되는 경우
++ 컬렉션, 스트림, 배열, 옵셔널 같은 컨테이너 타입은 옵셔널로 감싸면 안 된다.
++ 빈 Optional<List>를 반환하기보다는 빈 List를 반환하는게 좋다. -> 아이템 54
+  + 빈 컨테이너를 그대로 반환하면 클라이언트에 옵셔널 처리 코드를 넣지 않아도 된다.
+#### Optional를 권장하는 경우
++ 결과가 없을 수 있고, 클라이언트가 특별하게 처리해야 하는 경우
++ 성능에 민감하지 않은 메서드의 반환값
 
 <br><hr><br>
 
 ## 아이템 56. 공개된 API 요소에는 항상 문서화 주석을 작성하라
-+
+### java doc
++ @param, @return, @throws, {@code}, {@iteral}, @implSpec, {@inheritDoc}
+### 주석 주의사항
++ 메서드 주석에서는 HOW가 아닌 WHAT을 기술해야 된다.
++ 한 클래스 안에 설명이 똑같은 맴버가 둘 이상이면 안된다.
++ 제네릭 타입이나 메서드를 문서화 할때 모든 타입 매개변수에 주석을 달아야 된다.
++ 열거타입을 문서화 할때 상수에도 주석을 달아야 된다.
++ 정적메서드의 쓰레드 안전수준은 안전하던 안하던 다 주석에 명시 해야 된다.
++ 직렬화할 수 있는 클래스라면 직렬화 형태도 API에 기술해야 한다.
