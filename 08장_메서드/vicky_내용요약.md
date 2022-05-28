@@ -186,12 +186,38 @@ public static void main(String[] args) {
 <br><hr><br>
 
 ## 아이템 53. 가변인수는 신중히 사용하라
-+
+### 가변인수 메서드
++ 인수가 1개일 경우에는 런타임에러가 발생하게 된다.
++ 아래처럼 int 인수와 가변인수를 받으면 문제가 해결된다.
+```java
+static int min(int firstArg, int... remainingArgs) {
+   if (args.length == 0)
+       throw new IllegalArgumentException("인수가 1개 이상 필요합니다.");
+   int min = args[0];
+   for (int i = 1; i < args.length; i++)
+       if (args[i] < min)
+           min = args[i];
+       return min;
+}
+```
++ 성능에 민감한 상황에서는 가변인수 사용을 고려하자.
+  + 일반적으로 많이 쓰이는 개수까지는 다중정의하고 그 이후에는 가변인수를 사용하기도 한다.
+### [EnumSet.of 메소드](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/EnumSet.html#of(E,E,E,E,E))
++ EnumSet 열거 타입 집합 생성 비용을 최소화한다.
 
 <br><hr><br>
 
 ## 아이템 54. null이 아닌, 빈 컬렉션이나 배열을 반환하라
-+
++ null을 반환하면 클라이언트는 null을 처리하는 코드를 추가로 작성해야 한다는 문제가 있다.
++ null과 빈 컨테이너 반환시의 성능상의 차이는 신경 쓸 수준이 되지 않는다.
++ 빈 컬렉션과 배열은 굳이 새로 할당하지 않고도 반환할 수 있다.
++ 사용패턴에 따라 빈 컬렉션 할당이 성능을 눈에 띄게 떨어뜨릴 수도 있다. 그럴 경우 매번 똑같은 빈 '불변' 컬렉션을 반환하면 된다.
+```java
+public List<Cheese> getCheese(){
+  return cheeseInStock.isEmpty()? Collections.emptyList() : new ArrayList<>(cheeseInStock);
+}
+```
++ 길이 0짜리 배열을 미리 선언해두고 매번 그 배열을 반환하면 된다. 길이 0인 배열은 모두 불변이기 때문이다.
 
 <br><hr><br>
 
